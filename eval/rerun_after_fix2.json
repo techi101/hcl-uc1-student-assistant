@@ -1,0 +1,29 @@
+[
+ {
+  "id": "Q04",
+  "ms": 19643,
+  "answer_correct": true,
+  "type_ok": true,
+  "citation_ok": true,
+  "abstention_ok": true,
+  "tool_ok": null,
+  "answer_type": "retrieved_fact",
+  "citations": [
+   "SYN-FAQ-ATT-2026#Q1",
+   "SYN-CIRC-ATT-2026#1"
+  ],
+  "answer": "The FAQ says 65 % attendance is enough, but that FAQ is not in force; the current rule requires 80 % attendance to sit the end‑semester exam."
+ },
+ {
+  "id": "Q16",
+  "ms": 2596,
+  "answer_correct": false,
+  "type_ok": false,
+  "citation_ok": false,
+  "abstention_ok": false,
+  "tool_ok": true,
+  "answer_type": "not_found",
+  "citations": [],
+  "answer": "I could not find this information in the authorised university sources."
+ }
+]

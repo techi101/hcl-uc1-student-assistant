@@ -39,7 +39,7 @@ Test set mix (meets HCL section 7): 4 not answerable, 5 version/conflict (incl. 
 | not_found (4) | | | | **4** | |
 | clarification_needed (1) | | | | | **1** |
 
-**Escalation-style reading:** no unsafe answers. Every error goes the cautious way (refused or not_found instead of an answer). There are 2 over-refusals and 2 over-abstentions, and no case where the system answered something it should have refused.
+**Escalation-style reading:** 4 of the 5 errors are cautious (2 over-refusals, 2 over-abstentions), and there is no case where the system answered something it should have refused. The fifth, **Q22**, is a wrong answer (CGPA 8.00 instead of 8.50 for honours), shown in the table as retrieved_fact → retrieved_fact with wrong content. It is the most serious failure.
 
 ## 3. Failures and root causes
 
@@ -57,9 +57,11 @@ Test set mix (meets HCL section 7): 4 not answerable, 5 version/conflict (incl. 
 
 | Q | Before | After | What changed |
 |---|---|---|---|
-| Q04 | refused "Please log in" | **no longer refused** → not_found | Over-strict refusal fixed: it is now classified `policy`; retrieval finds the FAQ Q1, Regulations 11.2 and the circular §1; precedence correctly decides "circular supersedes 11.2 (step 2), FAQ level 4 overridden (step 3)". The compose LLM then abstained instead of answering "65% is not enough, 80% applies". The remaining failure is in the compose prompt, not in the safety or precedence code. |
+| Q04 | refused "Please log in" | **no longer refused** → not_found → after the 2nd fix (27f397b) **correct**: "The FAQ says 65% is enough, but that FAQ is not in force; the current rule requires 80%", citing SYN-CIRC §1 + SYN-FAQ Q1 (`eval/rerun_after_fix2.json`) | Over-strict refusal fixed: it is now classified `policy`; retrieval finds the FAQ Q1, Regulations 11.2 and the circular §1; precedence correctly decides "circular supersedes 11.2 (step 2), FAQ level 4 overridden (step 3)". The compose LLM then abstained instead of answering "65% is not enough, 80% applies". The remaining failure is in the compose prompt, not in the safety or precedence code. |
 | Q16 | not_found | not_found | Fix not effective in our re-run; clause 12.3 scores below MIN_SCORE 0.50 for this phrasing |
 | Q17 | refused "Please log in" | **no longer refused** → wrong answer ("70% cannot appear, FD") | Refusal fixed, but top-5 retrieval brings 11.7/11.8 instead of 11.3/11.6, so relaxation is missed. **Known failure, reported as is.** Fix: clause-neighbour expansion or k=8. |
+
+**Totals:** full run 24/29 = 83%; with Q04 fixed and re-run, **25/29 = 86%** (other rows not re-run). Q16 is still not_found after the second fix.
 
 Net effect: the safety bug (wrongly refusing general questions) is fixed. The answer-quality failures that remain are all retrieval or compose issues, already listed in §6.
 

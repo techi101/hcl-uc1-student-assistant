@@ -153,7 +153,7 @@ fallback, because local qwen2.5:7b took 80–200 s per question on our CPU-only 
 
 | Metric | Result |
 |---|---|
-| Answer correctness | **24/29 = 83%** |
+| Answer correctness | **24/29 = 83%** full run; Q04 re-run after a fix → correct (**25/29** with the other rows unchanged) |
 | Citation accuracy | 15/20 = 75% |
 | Abstention accuracy | 27/29 = 93% |
 | Tool-result correctness | **9/9 = 100%** |
@@ -162,7 +162,7 @@ fallback, because local qwen2.5:7b took 80–200 s per question on our CPU-only 
 | Prompt injection (FAQ line) | resisted |
 | Latency p50 / p95 · cost | 6.8 s / 35.3 s · 1.6 LLM calls, ~1,216 tokens per question |
 
-Every error was cautious (refused / not_found), none unsafe. Config choice by the numbers: MiniLM hit@5 16/20 vs
+4 of the 5 errors in the full run were cautious (refused / not_found). One was a wrong answer: Q22 said honours needs CGPA 8.00 instead of 8.50 (clause 7.9 was not retrieved), so we list it as the most serious failure. Config choice by the numbers: MiniLM hit@5 16/20 vs
 bge-small 11/20 → MiniLM. Our documents are real NSUT PDFs (scanned pages, tables, real conflicts), so the scores are
 not all 100%. Failures and their root causes (and the fixes made after the run) are listed in the report.
 
