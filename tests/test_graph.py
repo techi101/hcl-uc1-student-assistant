@@ -122,3 +122,24 @@ def test_me_returns_profile_for_known_header_and_404_otherwise():
     assert r.status_code == 200 and r.json()["student_id"] == "S1002" and "cgpa" not in r.json()
     assert client.get("/me", headers={"X-Student-Id": "S8888"}).status_code == 404
     assert client.get("/me").status_code == 404
+
+
+def test_how_do_i_procedure_with_record_word_is_not_refused():
+    # demo check: 'failed' + 'do i' made a guest procedure question look personal
+    r = graph.run("How do I apply for re-registration of a failed course?", DAY, None)
+    assert r["answer_type"] != "refused"
+
+
+def test_tool_result_is_never_thrown_away_as_not_found():
+    # demo check: compose said NOT_FOUND although check_exam_eligibility had a verdict -> code builds the sentence
+    from app import tools
+    out = tools.check_exam_eligibility("S1002", "CS201", DAY.isoformat())
+    call = {"tool": "check_exam_eligibility", "input": {"course_code": "CS201"}, "output": out, "status": "ok", "ms": 1}
+    text = graph.tool_answer([call])
+    assert out["result"] == "ELIGIBLE_ONLY_WITH_RELAXATION"
+    assert "relaxation" in text and "77.5%" in text and "80%" in text and "60%" in text
+    state = {"trace_id": "t", "as_of_date": DAY.isoformat(), "t0": 0.0, "policy": {}, "tools_invoked": [call],
+             "composed": {"answer": "NOT_FOUND", "_srcs": []}}
+    r = graph.finalize(state)["response"]
+    assert r["answer_type"] == "calculated" and r["answer"] == text
+    assert {c["doc_id"] for c in r["citations"]} == {"SYN-CIRC-ATT-2026", "NSUT-BTECH-REG-2019"}

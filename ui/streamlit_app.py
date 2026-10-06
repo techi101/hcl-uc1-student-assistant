@@ -509,10 +509,10 @@ def screen_signin() -> None:
 COURSE_EXAMPLE = {"B.Tech CSE": ("Data Structures", "CS201"), "B.Tech ECE": ("Signals and Systems", "EC201")}
 GENERAL = [
     ("file", "indigo", "Policy fact", "What is the minimum attendance required to appear for end-semester exams?"),
-    ("clipboard", "sky", "Procedure", "How do I apply for re-registration of a failed course?"),
+    ("clipboard", "sky", "Procedure", "How do I apply for the supplementary exam?"),
     ("award", "emerald", "Degree rule", "What is the minimum CGPA required for the award of a B.Tech degree?"),
     ("clock", "amber", "Attendance relaxation", "Can the Dean relax the attendance requirement, and by how much?"),
-    ("wallet", "violet", "Fees", "What is the annual tuition fee for B.Tech students admitted in 2025-26?"),
+    ("check", "violet", "Pass mark", "What minimum percentage is needed in the end semester examination to pass a course?"),
     ("help", "slate", "Not answerable", "What is the scholarship for studying in Antarctica?"),
 ]
 
@@ -525,8 +525,7 @@ def examples() -> list[tuple[str, str, str, str]]:
             ("chart", "sky", "My attendance", f"What is my attendance in {name}?"),
             ("check", "emerald", "My eligibility", f"Am I eligible to appear in the end-semester exam for {code}?"),
             ("layers", "amber", "My backlogs", "Do I have any active backlogs?"),
-            ("shuffle", "violet", "What-if",
-             f"I failed {name}. If I pass it in the re-registration exam, will I be eligible for placement?"),
+            ("award", "violet", "My result", f"Did I pass {name}?"),
             GENERAL[5]]
 
 

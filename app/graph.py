@@ -93,6 +93,10 @@ PRONOUN = re.compile(r"\b(my|mine|me|am i|can i|do i|will i|have i|i am|i'm|i ha
 # "What is my attendance?" -> "my" + "attendance" -> personal.
 # "How do I apply for re-evaluation?" -> "do i" but no MY_DATA word -> a procedure question, not personal.
 MY_DATA = re.compile(r"attendance|marks|result|grade|cgpa|sgpa|backlog|eligib|detain|record|\bpass(ed)?\b|\bfail(ed)?\b|promot", re.I)
+# PROCEDURE = "How do/can/should I ..." asks HOW to do something, so it is never personal even if it mentions a
+# record word. Bug found in the demo check: a guest asking "How do I apply for re-registration of a failed course?"
+# was told to log in ("do i" + "failed").
+PROCEDURE = re.compile(r"^\s*how\s+(do|can|should|would|could)\s+i\b", re.I)
 # SID finds a student ID in the text: "S" + exactly 4 digits, as a whole word.
 # Example: "Show S1234's attendance" -> "S1234". re.I means "s1234" matches too.
 # authorise uses it to spot a request about ANOTHER student.
@@ -195,7 +199,7 @@ def authorise(s: State) -> State:
             refused = "You can only access your own records. Requests for another student's data are not allowed."
     # Check 3: a personal question (PRONOUN + MY_DATA) with no header -> ask the user to log in.
     # Example: no header + "What is my attendance?" -> "Please log in ...".
-    if not refused and PRONOUN.search(q) and MY_DATA.search(q) and not sid:
+    if not refused and PRONOUN.search(q) and MY_DATA.search(q) and not PROCEDURE.search(q) and not sid:
         refused = "Please log in: personal questions need your student ID (X-Student-Id header)."
     # Check 4: a header id that is not in the database -> refuse, there is no record to show.
     # Example: header S0000 -> "Student S0000 is not in the records ...".
@@ -225,7 +229,7 @@ def classify(s: State) -> State:
     # A personal or eligibility question, but no logged-in student:
     if cat in ("personal", "eligibility") and not s.get("student"):
         # - with a pronoun ("am I eligible ...") it is about the asker -> refuse and ask them to log in.
-        if PRONOUN.search(s["question"]):     # "am I eligible ..." without login -> refuse
+        if PRONOUN.search(s["question"]) and not PROCEDURE.search(s["question"]):  # "am I eligible ..." -> refuse
             upd["refused"] = "Please log in: personal questions need your student ID (X-Student-Id header)."
         # - without a pronoun ("is 65% enough to appear?") it is a general rule question -> treat it as "policy" (fix for eval Q04).
         else:                                 # "is 65% enough to appear ..." is a general rule question (eval Q04 bug)
@@ -390,6 +394,49 @@ def compose(s: State) -> State:
 # to sources we actually retrieved, it can never invent a document.
 # Example: S1002 eligibility -> the tool ran OK -> answer_type "calculated", citations = the clauses behind
 # ATT-MIN-02 (circular SYN-CIRC-ATT-2026) and ATT-FLOOR-01 (Regulations 11.6).
+def _pct(v) -> str:
+    """'>=80%' / '>=60.0%' / 77.5 -> '80%' / '60%' / '77.5%' (display only; the numbers come from the tools)."""
+    n = float(str(v).lstrip("<>=").rstrip("%"))
+    return f"{n:g}%"
+
+
+# IN: the tool calls that succeeded  ->  OUT: one plain sentence built by CODE from the tool output, or None.
+# WHY: measured in the demo check, the compose LLM sometimes ignored a correct tool result and said NOT_FOUND
+# (S1002 eligibility, S1003 on 2026-07-15) or answered with a bare code like "ELIGIBLE". The verdict is code's,
+# so the sentence that states it can be code's too; the LLM's sentence is kept whenever it is a real sentence.
+def tool_answer(ok_tools: list[dict]) -> str | None:
+    for c in ok_tools:
+        o, code = c["output"], c["input"].get("course_code", "")
+        if not isinstance(o, dict):
+            continue
+        if c["tool"] == "check_exam_eligibility" and o.get("result"):
+            base = (f"Your attendance in {code} is {_pct(o['attendance_pct'])} ({o['classes_attended']} of "
+                    f"{o['classes_held']} classes); the minimum in force is {_pct(o['value'])} ({o['rule_id']})")
+            if o["result"] == "ELIGIBLE":
+                return f"Yes, you are eligible to appear. {base}."
+            if o["result"] == "ELIGIBLE_ONLY_WITH_RELAXATION":
+                return (f"Only with an attendance relaxation. {base}, but you are at or above the "
+                        f"{_pct(o['floor_value'])} floor ({o['floor_rule_id']}), so you can appear only if a "
+                        "relaxation is granted.")
+            return (f"No, you are not eligible to appear. {base}, and you are below the "
+                    f"{_pct(o['floor_value'])} floor ({o['floor_rule_id']}), below which no relaxation is possible.")
+        if c["tool"] == "check_course_pass":
+            if o.get("computed_result"):
+                verdict = "passed" if o["computed_result"] == "PASS" else "did not pass"
+                return (f"You {verdict} {code} ({o['exam_session']}): end-semester exam {_pct(o['ese_pct'])} "
+                        f"(rule {o['ese_rule']}), total {o['total_marks']}/{o['max_marks']} (rule {o['total_rule']}).")
+            if o.get("recorded_result"):
+                return f"Your recorded result in {code} ({o['exam_session']}) is {o['recorded_result']}."
+        if c["tool"] == "get_attendance" and "attendance_pct" in o:
+            return (f"Your attendance in {code} is {_pct(o['attendance_pct'])} ({o['classes_attended']} of "
+                    f"{o['classes_held']} classes).")
+        if c["tool"] == "get_backlogs" and o.get("active_backlogs") is not None:
+            n, courses = o["active_backlogs"], o.get("uncleared_courses") or []
+            return ("You have no active backlogs." if not n else
+                    f"You have {n} active backlog{'s' if n != 1 else ''}: {', '.join(courses)}.")
+    return None
+
+
 def finalize(s: State) -> State:
     """CODE decides answer_type and which citations are allowed — never the LLM."""
     # Read what earlier nodes produced. "or {}" keeps it safe when a node was skipped (e.g. refused early).
@@ -412,8 +459,10 @@ def finalize(s: State) -> State:
         answer = ("The authorised sources conflict and the precedence policy cannot decide between them. "
                   "Please contact the issuing office.")
         citations = [c for c in pol.get("applicable", [])][:2]
-    # 4 not_found: the LLM said NOT_FOUND or gave no answer -> the standard "could not find" message.
-    elif str(comp.get("answer", "")).strip().upper().startswith("NOT_FOUND") or not comp.get("answer"):
+    # 4 not_found: the LLM said NOT_FOUND or gave no answer, and no tool computed one -> the standard message.
+    #   A successful tool result IS an answer (computed by code), so it is never thrown away as not_found.
+    elif (str(comp.get("answer", "")).strip().upper().startswith("NOT_FOUND") or not comp.get("answer")) \
+            and not tool_answer(ok_tools):
         atype, answer = "not_found", config.NOT_FOUND_MSG
     # 5 otherwise a real answer: "calculated" if any tool worked (numbers came from code), else "retrieved_fact" (from documents).
     else:
@@ -428,7 +477,12 @@ def finalize(s: State) -> State:
             t = re.sub(r"\s*\((?:the cited clause\s*[,;&]?\s*)+\)", "", t)                       # "(S1; S2)" -> ""
             return t.strip()
         # Clean both the answer and the explanation.
-        answer, explanation = unlabel(comp["answer"]), unlabel(comp.get("explanation", ""))
+        answer, explanation = unlabel(comp.get("answer")), unlabel(comp.get("explanation", ""))
+        # the LLM said NOT_FOUND despite a tool result, or gave only a bare code ("ELIGIBLE") -> code's sentence
+        if ok_tools and (answer.upper().startswith("NOT_FOUND") or re.fullmatch(r"[A-Z_ ]+[.!]?", answer)):
+            answer = tool_answer(ok_tools) or answer
+            if not explanation or explanation.upper().startswith("NOT_FOUND"):
+                explanation = f"Computed by code from your records and the rules in force on {s['as_of_date']}."
         # For what-if (multi_step) questions, list the assumptions the LLM made, so the student can see them.
         if comp.get("assumptions") and s.get("category") == "multi_step":
             explanation += " Assumptions: " + "; ".join(map(str, comp["assumptions"]))
