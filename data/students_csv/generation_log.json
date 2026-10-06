@@ -31,5 +31,177 @@
       "seconds": 39.9
     }
   ],
-  "students": 32
+  "students": 64,
+  "extension": {
+    "script": "scripts/extend_data.py",
+    "groups": [
+      [
+        "B.Tech CSE",
+        2025,
+        3,
+        1033
+      ],
+      [
+        "B.Tech ECE",
+        2025,
+        3,
+        1049
+      ]
+    ],
+    "calls": [
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1382,
+        "seconds": 53.3
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1385,
+        "seconds": 51.7
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1384,
+        "seconds": 52.7
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1382,
+        "seconds": 59.6
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1384,
+        "seconds": 56.4
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1383,
+        "seconds": 55.1
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1383,
+        "seconds": 54.7
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1383,
+        "seconds": 58.0
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1383,
+        "seconds": 57.4
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech CSE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1385,
+        "seconds": 56.3
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1389,
+        "seconds": 62.6
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1388,
+        "seconds": 63.2
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1390,
+        "seconds": 55.0
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1387,
+        "seconds": 55.1
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1387,
+        "seconds": 54.8
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1387,
+        "seconds": 54.1
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1387,
+        "seconds": 52.1
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1387,
+        "seconds": 54.0
+      },
+      {
+        "model": "ollama:qwen2.5:7b-instruct",
+        "programme": "B.Tech ECE",
+        "batch": 2025,
+        "attempt": 1,
+        "tokens": 1385,
+        "seconds": 53.1
+      }
+    ],
+    "students_added": 32
+  }
 }
