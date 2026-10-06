@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 def _ollama(system: str, user: str, json_mode: bool) -> dict:
-    body = {"model": config.OLLAMA_MODEL, "stream": False, "options": {"temperature": 0},
+    body = {"model": config.OLLAMA_MODEL, "stream": False, "options": {"temperature": 0, "num_predict": 350, "num_ctx": 4096}, "keep_alive": "30m",
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
     if json_mode:
         body["format"] = "json"

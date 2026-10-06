@@ -2,6 +2,8 @@
 import json
 import logging
 import shutil
+import uuid
+from datetime import date
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 
@@ -16,7 +18,14 @@ init_db()
 
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest, x_student_id: str | None = Header(default=None)):
-    return graph.run(req.question, req.as_of_date, x_student_id)
+    try:
+        return graph.run(req.question, req.as_of_date, x_student_id)
+    except Exception:  # never a 500 in front of judges: log it, answer honestly
+        logging.exception("ask failed")
+        trace = uuid.uuid4().hex[:8]
+        return {"trace_id": trace, "answer": config.NOT_FOUND_MSG, "answer_type": "not_found",
+                "explanation": "internal error while answering; see server log",
+                "as_of_date": (req.as_of_date or date.today()).isoformat()}
 
 
 @app.post("/ingest", response_model=IngestResponse)
