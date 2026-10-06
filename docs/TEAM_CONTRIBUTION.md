@@ -1,14 +1,15 @@
 # Team contribution statement
 
-Team of 3. Omkar Mahabole started with us and left mid-day; his part (B) moved to Suryansh.
-We built with AI coding assistants (see `docs/AI_USAGE.md`). Most code was generated on Suryansh's laptop, so the git history is uneven. The ownership below is what each person is responsible for and can explain.
+Team of 3. Omkar Mahabole started with us and left mid-day.
+We built with AI coding assistants (see `docs/AI_USAGE.md`). Most code was generated with Claude Code on Suryansh's laptop, so the git history is uneven. Ownership below is split **equally**: one hard file each. It means who **reviews, tests, explains and changes it live** in the Q&A.
 
-| Member | GitHub | Owns and can explain |
-|---|---|---|
-| **Suryansh Kumar** | techi101 | **A**: PDF ingestion, OCR, clause chunking, Chroma search, Annex A precedence engine (chunks + rule_registry), live rule extraction on `/ingest`. **B**: LLM synthetic data kit, validator, judges' loader, deterministic tools (3-tier attendance, pass/fail, backlogs), data card. Directed the core LangGraph workflow. |
-| **Geetarth Jain** | Geetarthjain15 | **C**: running the system on his laptop, Docker + docker compose, local-model benchmark, the API/workflow walkthrough, UI, demo runbook, rehearsing the judges' live tests (ingest + loader). |
-| **Neetu** | neetu54 | **D**: NSUT document and source-register review, rule rows and synthetic documents review, evaluation set + report, README review. |
+| Member | GitHub | Owns (hard · medium · easy) | Live change they can make | Also covers |
+|---|---|---|---|---|
+| **Suryansh Kumar** | techi101 | **Documents in + evaluation.** Hard: `app/retrieval.py` (ingestion, clause chunking, Chroma search). Medium: `app/rule_extract.py` (live rule extraction on `/ingest`), `eval/testset.json`, `eval/run_eval.py`. Easy: `app/ocr.py`, `scripts/ingest_all.py`, `data/source_register.csv`, the 2 synthetic documents, `eval/retrieval_comparison.md`. | Retrieval-only eval at k=3 vs k=5 | `precedence.resolve` |
+| **Geetarth Jain** | Geetarthjain15 | **Workflow + safety + serving + demo laptop.** Hard: `app/graph.py` (the 7-step workflow, code-first authorisation, finalize). Medium: `ui/streamlit_app.py`, `Dockerfile` + `docker-compose.yml`. Easy: `app/main.py`, `app/llm.py`, `app/audit.py`, `app/prompts.py`, `docs/MODEL_CHOICE.md`. | Retrieval threshold `MIN_SCORE` 0.50 → 0.55 | `tools.check_exam_eligibility` |
+| **Neetu** | neetu54 | **Rules + students + paperwork.** Hard: `app/precedence.py` (Annex A on chunks and rule_registry). Medium: `app/tools.py` (3-tier attendance, pass/fail, backlogs), `scripts/generate_data.py`. Easy: `data/rules.csv`, `app/db.py`, `scripts/validate_data.py`, `scripts/load_students.py`, `scripts/load_rules.py`, `samples/`, `docs/AI_USAGE.md`, this file, `docs/DATA_CARD.md`. | Add a `rules.csv` row + `scripts.load_rules` and show eligibility change | `graph.authorise` |
 
+Shared by all: `README.md`, `app/config.py`, `app/schemas.py`, `tests/` (each owner keeps the tests for their files).
 All three of us studied the whole system (7 steps, code decides / AI explains, precedence, 3-tier attendance) for the Q&A.
 
 ## Declaration of original work

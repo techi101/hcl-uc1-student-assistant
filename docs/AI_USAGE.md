@@ -13,15 +13,15 @@ HCL's rules allow and encourage AI coding assistants, provided we disclose how w
 
 ## What was generated, and where it was built
 
-Most of the code was generated with Claude Code **on Suryansh's laptop**, which is why most commits come from one account. Omkar left the team mid-day, so part B moved to Suryansh.
+Most of the code was generated with Claude Code **on Suryansh's laptop**, which is why most commits come from one account (Omkar left the team mid-day). Ownership below means who **reviews, tests, explains and changes it live**, split equally: one hard file each.
 
-| Part | Files | Built with AI on | Owner who reviewed / must explain it |
+| Owner | Hard | Medium | Easy |
 |---|---|---|---|
-| A: ingestion, OCR, search, precedence, live rule extraction | `app/retrieval.py`, `app/ocr.py`, `app/precedence.py`, `scripts/ingest_all.py`, `scripts/live_ingest_check.py` | Suryansh's laptop | Suryansh |
-| B: synthetic data kit, validator, judges' loader, tools | `scripts/generate_data.py`, `scripts/validate_data.py`, `scripts/load_students.py`, `app/tools.py`, `docs/DATA_CARD.md` | Suryansh's laptop | Suryansh |
-| Core workflow, API, audit, UI | `app/graph.py`, `app/main.py`, `app/audit.py`, `ui/streamlit_app.py` | Suryansh's laptop | Geetarth (C) |
-| Rules, synthetic docs, source register, eval set + report | `data/rules.csv`, `data/docs/SYN-*.md`, `data/source_register.csv`, `eval/` | Suryansh's laptop | Neetu (D) |
-| Docker, demo runbook | `Dockerfile`, `docker-compose.yml`, `docs/DEMO_RUNBOOK.md` | see git history | Geetarth (C) |
+| **Suryansh** (documents in + evaluation) | `app/retrieval.py` | `app/rule_extract.py`, `eval/testset.json`, `eval/run_eval.py` | `app/ocr.py`, `scripts/ingest_all.py`, `data/source_register.csv`, `data/docs/SYN-*.md`, `eval/retrieval_comparison.md` |
+| **Geetarth** (workflow + safety + serving + demo laptop) | `app/graph.py` | `ui/streamlit_app.py`, `Dockerfile` + `docker-compose.yml` | `app/main.py`, `app/llm.py`, `app/audit.py`, `app/prompts.py`, `docs/MODEL_CHOICE.md` |
+| **Neetu** (rules + students + paperwork) | `app/precedence.py` | `app/tools.py`, `scripts/generate_data.py` | `data/rules.csv`, `app/db.py`, `scripts/validate_data.py`, `scripts/load_students.py`, `scripts/load_rules.py`, `samples/`, `docs/AI_USAGE.md`, `docs/TEAM_CONTRIBUTION.md`, `docs/DATA_CARD.md` |
+
+Shared: `README.md`, `app/config.py`, `app/schemas.py`, `tests/` (each owner keeps the tests for their files).
 
 ## How we verified AI-generated work
 
