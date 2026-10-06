@@ -36,7 +36,7 @@ Do not edit other files. Need a change elsewhere → tell the owner.
   | total just below 35 | internal 15 + external 19 = 34, result FAIL |
   | absent | result ABSENT, external 0 |
   | multiple backlogs | 3 FAIL results, active_backlogs = 3 |
-  | supplementary/re-attempt row | exam_type SUPPLEMENTARY row after a FAIL |
+  | re-registration attempt (NSUT has NO supplementary exams, Regulations 12.3 — failed courses are re-registered) | a FAIL in session 2026-MAY, then a second row exam_type REGULAR, exam_session 2026-JUL (summer semester, 12.5) with PASS. Do NOT use SUPPLEMENTARY anywhere in our data (the schema allows it only because judges' data may contain it — the loader must still accept it) |
   | CGPA exactly 5.00 | (degree minimum, clause 15.1) |
 - Save the EXACT prompt text sent to the LLM in `prompts/generate_students.txt` (verbatim) and the model name used.
 - Output CSVs in `data/students_csv/`: `students.csv`, `courses.csv`, `attendance.csv`, `results.csv` (column names exactly Annex C).
