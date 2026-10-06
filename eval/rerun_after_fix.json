@@ -1,0 +1,35 @@
+[
+ {
+  "id": "Q04",
+  "ms": 18755,
+  "answer_correct": false,
+  "type_ok": false,
+  "citation_ok": false,
+  "abstention_ok": false,
+  "tool_ok": null,
+  "answer_type": "not_found",
+  "answer": "I could not find this information in the authorised university sources."
+ },
+ {
+  "id": "Q16",
+  "ms": 3355,
+  "answer_correct": false,
+  "type_ok": false,
+  "citation_ok": false,
+  "abstention_ok": false,
+  "tool_ok": true,
+  "answer_type": "not_found",
+  "answer": "I could not find this information in the authorised university sources."
+ },
+ {
+  "id": "Q17",
+  "ms": 3107,
+  "answer_correct": false,
+  "type_ok": true,
+  "citation_ok": true,
+  "abstention_ok": true,
+  "tool_ok": null,
+  "answer_type": "retrieved_fact",
+  "answer": "No. The minimum attendance to sit for the End‑Semester Exam is 80%; with 70% the student cannot appear and will be given an FD grade."
+ }
+]

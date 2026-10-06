@@ -53,6 +53,16 @@ Test set mix (meets HCL section 7): 4 not answerable, 5 version/conflict (incl. 
 
 **Note on retrieval misses for tool questions:** Q08, Q10 and Q11 count as retrieval misses at k=5, yet all three answers are correct. Their citation is the rule clause the tool used (`rules_used` → finalize), not a retrieved chunk, so hit@k understates them.
 
+### Re-run after fixes (commits ac44024, 539f64d), same Groq model — `eval/rerun_after_fix.json`
+
+| Q | Before | After | What changed |
+|---|---|---|---|
+| Q04 | refused "Please log in" | **no longer refused** → not_found | Over-strict refusal fixed: it is now classified `policy`; retrieval finds the FAQ Q1, Regulations 11.2 and the circular §1; precedence correctly decides "circular supersedes 11.2 (step 2), FAQ level 4 overridden (step 3)". The compose LLM then abstained instead of answering "65% is not enough, 80% applies". The remaining failure is in the compose prompt, not in the safety or precedence code. |
+| Q16 | not_found | not_found | Fix not effective in our re-run; clause 12.3 scores below MIN_SCORE 0.50 for this phrasing |
+| Q17 | refused "Please log in" | **no longer refused** → wrong answer ("70% cannot appear, FD") | Refusal fixed, but top-5 retrieval brings 11.7/11.8 instead of 11.3/11.6, so relaxation is missed. **Known failure, reported as is.** Fix: clause-neighbour expansion or k=8. |
+
+Net effect: the safety bug (wrongly refusing general questions) is fixed. The answer-quality failures that remain are all retrieval or compose issues, already listed in §6.
+
 ## 4. Configuration comparison (higher-marks item)
 
 Retrieval-only, same 20 questions with an expected source (`eval/retrieval_comparison.md`):
