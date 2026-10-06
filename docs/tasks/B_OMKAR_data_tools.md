@@ -63,7 +63,7 @@ Also plant 3 bad rows in a temp copy in tests to prove it catches them.
 - `get_results(student_id, course_code=None)` → list of rows
 - `find_course(text, programme)` → matching courses by code or name (case-insensitive, partial). 0 → None; >1 → return all (graph asks clarification)
 - `get_rule(parameter, as_of_date, programme, batch_year)` → fetch candidate rows (effective_from ≤ as_of_date, effective_to empty or ≥ as_of_date, in scope)
-  then call `app.precedence.pick_rule(rows, as_of_date, student)` (Suryansh writes it; until then pick highest-authority then latest effective_from via a local helper marked TEMP)
+  -> just call `app.precedence.get_rule_in_force(parameter, as_of_date, student)` (DONE + tested): returns `{rule, decision, conflicts, unresolved, upcoming}`; use `rule['value']`, `rule['rule_id']`, `rule['source_doc_id']`, `rule['source_section']`; pass `decision`/`conflicts` through in the tool output so the answer can explain WHICH rule applied and why
 - `check_exam_eligibility(student_id, course_code, as_of_date)` →
   `{"result": "ELIGIBLE" | "ELIGIBLE_ONLY_WITH_RELAXATION" | "NOT_ELIGIBLE", "rule_id", "value", "actual", "source_doc_id", "source_section", "floor_rule_id"}`
   logic: pct ≥ min_attendance_pct → ELIGIBLE; pct ≥ attendance_floor_pct → ELIGIBLE_ONLY_WITH_RELAXATION; else NOT_ELIGIBLE.
