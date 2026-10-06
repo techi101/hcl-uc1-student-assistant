@@ -1,0 +1,72 @@
+{
+  "request": {
+    "question": "What is the scholarship for studying in Antarctica?",
+    "X-Student-Id": null,
+    "as_of_date": "2026-10-06"
+  },
+  "response": {
+    "trace_id": "409a6032",
+    "answer": "I could not find this information in the authorised university sources.",
+    "answer_type": "not_found",
+    "citations": [],
+    "tools_invoked": [],
+    "applied_rules": [],
+    "conflicts_detected": [],
+    "explanation": "",
+    "as_of_date": "2026-10-06"
+  },
+  "audit_record": {
+    "trace_id": "409a6032",
+    "timestamp": "2026-10-06T09:21:55+00:00",
+    "student_id": null,
+    "question_category": "policy",
+    "as_of_date": "2026-10-06",
+    "sources_retrieved": [
+      {
+        "doc_id": "NSUT-FEE-2025-26",
+        "section": "2.1",
+        "score": 0.4844
+      },
+      {
+        "doc_id": "NSUT-FEE-2025-26",
+        "section": "1.2",
+        "score": 0.4535
+      },
+      {
+        "doc_id": "NSUT-FEE-2026-27",
+        "section": "2.1",
+        "score": 0.4488
+      },
+      {
+        "doc_id": "NSUT-FEE-2025-26",
+        "section": "1.2",
+        "score": 0.4469
+      },
+      {
+        "doc_id": "NSUT-FEE-2026-27",
+        "section": "1.1",
+        "score": 0.4453
+      }
+    ],
+    "precedence_decision": "no conflicts among applicable sources",
+    "superseded": [],
+    "excluded_future": [],
+    "tools_invoked": [],
+    "applied_rules": [],
+    "conflicts_detected": [],
+    "answer_type": "not_found",
+    "citations": [],
+    "model": "groq:openai/gpt-oss-120b",
+    "llm_calls": 1,
+    "tokens": 452,
+    "latency_ms": 1067,
+    "stage_ms": {
+      "authorise_ms": 2,
+      "classify_ms": 1020,
+      "retrieve_ms": 38,
+      "precedence_ms": 0,
+      "tools_ms": 0,
+      "compose_ms": 0
+    }
+  }
+}

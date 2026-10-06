@@ -1,0 +1,164 @@
+{
+  "request": {
+    "question": "Am I eligible to appear in the end-semester exam for Data Structures?",
+    "X-Student-Id": "S1002",
+    "as_of_date": "2026-10-06"
+  },
+  "response": {
+    "trace_id": "50175b16",
+    "answer": "You may appear in the exam, but only with a relaxation – your attendance (77.5%) is below the 80% minimum required but above the 60% floor, so you are eligible with relaxation.",
+    "answer_type": "calculated",
+    "citations": [
+      {
+        "doc_id": "SYN-CIRC-ATT-2026",
+        "title": "Circular: Revision of minimum attendance (SYNTHETIC)",
+        "section": "1",
+        "page": 1,
+        "version": "1",
+        "effective_from": "2026-08-01"
+      },
+      {
+        "doc_id": "NSUT-BTECH-REG-2019",
+        "title": "Regulations for Undergraduate Programme of Bachelor of Technology (NSUT Regulations-2019-I(A))",
+        "section": "11.6",
+        "page": 18,
+        "version": "2019-I(A) (Senate/BoM meeting dates left blank in PDF)",
+        "effective_from": "2019-07-01"
+      }
+    ],
+    "tools_invoked": [
+      {
+        "tool": "check_exam_eligibility",
+        "input": {
+          "course_code": "CS201",
+          "as_of_date": "2026-10-06"
+        },
+        "output": {
+          "result": "ELIGIBLE_ONLY_WITH_RELAXATION",
+          "attendance_pct": 77.5,
+          "classes_held": 40,
+          "classes_attended": 31,
+          "rule_id": "ATT-MIN-02",
+          "value": ">=80%",
+          "source_doc_id": "SYN-CIRC-ATT-2026",
+          "source_section": "1",
+          "floor_rule_id": "ATT-FLOOR-01",
+          "floor_value": ">=60.0%",
+          "floor_source": "NSUT-BTECH-REG-2019#11.6",
+          "rules_used": [
+            {
+              "rule_id": "ATT-MIN-02",
+              "value": ">=80",
+              "source_doc_id": "SYN-CIRC-ATT-2026",
+              "source_section": "1"
+            },
+            {
+              "rule_id": "ATT-FLOOR-01",
+              "value": ">=60",
+              "source_doc_id": "NSUT-BTECH-REG-2019",
+              "source_section": "11.6"
+            }
+          ],
+          "precedence_decision": "ATT-MIN-02 (SYN-CIRC-ATT-2026) supersedes ATT-MIN-01 (NSUT-BTECH-REG-2019#11.2) (step 2); ATT-MIN-03 (SYN-FAQ-ATT-2026, level 4) says 65 but ATT-MIN-02 (level 2) prevails (step 3)",
+          "conflicts": [
+            "ATT-MIN-03 (SYN-FAQ-ATT-2026, level 4) says 65 but ATT-MIN-02 (level 2) prevails (step 3)"
+          ],
+          "upcoming": []
+        }
+      }
+    ],
+    "applied_rules": [
+      {
+        "rule_id": "ATT-MIN-02",
+        "value": ">=80",
+        "source_doc_id": "SYN-CIRC-ATT-2026"
+      },
+      {
+        "rule_id": "ATT-FLOOR-01",
+        "value": ">=60",
+        "source_doc_id": "NSUT-BTECH-REG-2019"
+      }
+    ],
+    "conflicts_detected": [
+      "ATT-MIN-03 (SYN-FAQ-ATT-2026, level 4) says 65 but ATT-MIN-02 (level 2) prevails (step 3)"
+    ],
+    "explanation": "Based on the check_exam_eligibility tool result showing ELIGIBLE_ONLY_WITH_RELAXATION and the attendance rules (ATT-MIN-02 >=80% superseded by floor >=60%).",
+    "as_of_date": "2026-10-06"
+  },
+  "audit_record": {
+    "trace_id": "50175b16",
+    "timestamp": "2026-10-06T09:21:44+00:00",
+    "student_id": "S1002",
+    "question_category": "eligibility",
+    "as_of_date": "2026-10-06",
+    "sources_retrieved": [
+      {
+        "doc_id": "NSUT-BTECH-REG-2019",
+        "section": "7.4",
+        "score": 0.5127
+      },
+      {
+        "doc_id": "SYN-FAQ-ATT-2026",
+        "section": "Q1",
+        "score": 0.4764
+      },
+      {
+        "doc_id": "SYN-CIRC-ATT-2026",
+        "section": "1",
+        "score": 0.4729
+      },
+      {
+        "doc_id": "NSUT-BTECH-REG-2019",
+        "section": "7.7",
+        "score": 0.468
+      },
+      {
+        "doc_id": "NSUT-BTECH-REG-2019",
+        "section": "4.1",
+        "score": 0.4633
+      }
+    ],
+    "precedence_decision": "no conflicts among applicable sources",
+    "superseded": [],
+    "excluded_future": [],
+    "tools_invoked": [
+      {
+        "tool": "check_exam_eligibility",
+        "status": "ok",
+        "ms": 21
+      }
+    ],
+    "applied_rules": [
+      {
+        "rule_id": "ATT-MIN-02",
+        "value": ">=80",
+        "source_doc_id": "SYN-CIRC-ATT-2026"
+      },
+      {
+        "rule_id": "ATT-FLOOR-01",
+        "value": ">=60",
+        "source_doc_id": "NSUT-BTECH-REG-2019"
+      }
+    ],
+    "conflicts_detected": [
+      "ATT-MIN-03 (SYN-FAQ-ATT-2026, level 4) says 65 but ATT-MIN-02 (level 2) prevails (step 3)"
+    ],
+    "answer_type": "calculated",
+    "citations": [
+      "SYN-CIRC-ATT-2026#1",
+      "NSUT-BTECH-REG-2019#11.6"
+    ],
+    "model": "groq:openai/gpt-oss-120b",
+    "llm_calls": 2,
+    "tokens": 1928,
+    "latency_ms": 2963,
+    "stage_ms": {
+      "authorise_ms": 6,
+      "classify_ms": 890,
+      "retrieve_ms": 79,
+      "precedence_ms": 1,
+      "tools_ms": 27,
+      "compose_ms": 1906
+    }
+  }
+}
