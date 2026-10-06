@@ -15,6 +15,28 @@ POST /ask (question, as_of_date, X-Student-Id)
   → finalize        code: answer_type, citations (only retrieved chunks), audit record, trace_id
 ```
 
+## 1b. Design rules added after review (11:50)
+1. **Authorisation is CODE, not the LLM.** Before any LLM call: regex `S\d{4}` in the question ≠ header → refused;
+   full_name of another student from `students` in the question → refused; personal intent words ("my", "am I") with no
+   header → refused. The LLM classifier can only ADD a refusal, never remove one.
+2. **Precedence (Annex A) runs in TWO places with the SAME function:** on retrieved chunks (text answers) and on
+   `rule_registry` rows (tool thresholds: join source_doc_id → Source Register for authority_level + supersedes).
+   Otherwise a judge's new circular changes the text answer but the eligibility tool still uses the old number.
+3. **Live ingestion updates rules too:** `/ingest` → chunk + index, then `extract_rules(doc)` proposes rule rows
+   (LLM extraction → Pydantic validation → only known `parameter` names, value must appear verbatim in the chunk text)
+   → inserted with source_doc_id + section. Also `POST /admin/rules` for manual rows. Both logged in audit.
+4. **Chunk by clause** (regex like `^\d+(\.\d+)*` headings), keep `section` = clause number, so clause-level
+   supersession ("ACAD-REG-2021#7.2") and citations work. Page number kept per chunk.
+5. **Attendance is three-tier at NSUT** (Regulations 11.2–11.7): ≥75 ELIGIBLE; 60–<75 ELIGIBLE_ONLY_WITH_RELAXATION
+   (Dean ≤10%, committee further ≤5%, max twice); <60 NOT_ELIGIBLE (grade FD). All 3 numbers live in rule_registry.
+6. **Scope matching:** student programme "B.Tech CSE" is covered by scope "B.Tech" (prefix match) or "ALL";
+   batches "2023+" = batch_year ≥ 2023, "2019-2022" = range, "ALL". One function, unit-tested. Assumption in README.
+7. **OCR at ingest time** (scanned pages, also judges' docs): page with < 50 chars of text → rapidocr-onnxruntime.
+   Hindi legacy-font garbage lines dropped (ratio of letters/known words filter).
+8. **not_found gate is measured, not guessed:** similarity threshold chosen from the eval set (MiniLM vs bge = our
+   "two configurations" comparison).
+9. **Docker:** API container reaches host Ollama at `OLLAMA_URL=http://host.docker.internal:11434`.
+
 ## 2. Python interfaces (owner in brackets)
 
 `app/retrieval.py` [A]
@@ -25,13 +47,16 @@ POST /ask (question, as_of_date, X-Student-Id)
 `app/precedence.py` [A]
 - `resolve(chunks: list[Chunk], as_of_date: str, student: dict | None) -> dict` →
   `{"applicable": [Chunk], "excluded_future": [Chunk], "superseded": [Chunk], "conflicts": [str], "decision": str, "unresolved": bool}`
+- `pick_rule(rows: list[dict], as_of_date: str, student: dict | None) -> dict` → same Annex A steps over rule_registry rows (each row joined with its doc's authority_level + supersedes)
+- `in_scope(scope_programmes: str, scope_batches: str, student: dict | None) -> bool`
+- `extract_rules(doc_id: str, chunks: list[Chunk]) -> list[dict]` (live-ingest rule rows, validated)
 
 `app/tools.py` [B]  (all read SQLite; thresholds from rule_registry)
 - `get_student(student_id) -> dict | None`
 - `get_attendance(student_id, course_code) -> {"classes_held", "classes_attended", "attendance_pct"}`
 - `get_results(student_id, course_code=None) -> list[dict]`
-- `get_rule(parameter, as_of_date, programme, batch_year) -> dict | None`  (rule_registry row in force)
-- `check_exam_eligibility(student_id, course_code, as_of_date) -> {"result": "ELIGIBLE"|"NOT_ELIGIBLE", "rule_id", "value", "actual", "source_doc_id", "source_section"}`
+- `get_rule(parameter, as_of_date, programme, batch_year) -> dict | None`  (rule_registry row in force, chosen with precedence.pick_rule — Annex A, NOT "latest row")
+- `check_exam_eligibility(student_id, course_code, as_of_date) -> {"result": "ELIGIBLE"|"ELIGIBLE_ONLY_WITH_RELAXATION"|"NOT_ELIGIBLE", "rule_id", "value", "actual", "source_doc_id", "source_section"}`
 - (add) `check_supplementary_eligibility`, `check_placement_eligibility` — same output shape
 - `find_course(text, programme) -> list[course]`  (for "Data Structures" → CS201; several → clarification_needed)
 
