@@ -1,0 +1,15 @@
+{
+  "S1001": "CS201 attendance exactly 80.0% (32/40) = AT the threshold in force from 2026-08-01 (circular)",
+  "S1002": "CS201 attendance 77.5% (31/40) = one class below 80% (also HCL's 6.1 example numbers)",
+  "S1003": "CS201 attendance exactly 75.0% (30/40) = AT Regulations 11.2 threshold (ask with as_of_date 2026-07-15)",
+  "S1004": "CS201 attendance 72.5% (29/40) = one class below 75%",
+  "S1005": "CS201 attendance 55% (22/40) = below the 60% floor -> DETAINED",
+  "S1006": "CS201 ESE 14/50 = 28% (< 30%, clause 12.7) with internal 30 -> FAIL although total 44",
+  "S1007": "CS201 total 34 (internal 15 + external 19) = one below 35 -> FAIL although ESE 38%",
+  "S1008": "MA201 ABSENT in the end-semester exam",
+  "S1009": "multiple backlogs: FAIL in CS201, CS203, MA201 -> active_backlogs 3",
+  "S1010": "re-registration: CS203 FAIL in 2026-MAY, then REGULAR re-attempt 2026-JUL (summer, 12.5) PASS (NSUT has no supplementary exams, 12.3)",
+  "S1011": "CGPA exactly 5.00 = minimum for the degree (15.1)",
+  "S1012": "CGPA exactly 8.50 = honours CGPA (7.9)",
+  "S1017": "EC201 attendance exactly 80.0% (32/40) (ECE: the CSE FAQ's 65% must NOT apply)"
+}

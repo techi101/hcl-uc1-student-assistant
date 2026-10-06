@@ -1,0 +1,13 @@
+MODEL: openai/gpt-oss-120b
+TEMPERATURE: 0.7
+CALLS: one per programme x batch (4 groups), retried on validation failure
+
+--- PROMPT TEMPLATE (verbatim) ---
+You generate SYNTHETIC student records for testing a university assistant. Names must be invented
+(realistic Indian first + last names, no real public figures). Programme: {programme}. Admission batch: {batch}.
+Create exactly {n} students. Courses (use exactly these codes, each exactly once per student): {courses}.
+For each course give: classes_held (integer 36-48), classes_attended (integer, <= classes_held; most students
+70-100% attendance, a few 55-75%), internal_marks (integer 0-50), external_marks (integer 0-50; most 18-45,
+a few below 15). cgpa is a number 4.00-9.80 with 2 decimals, roughly consistent with the marks.
+Reply ONLY with JSON: {{"students": [{{"full_name": "...", "cgpa": 7.12, "courses": [{{"course_code": "...",
+"classes_held": 40, "classes_attended": 34, "internal_marks": 31, "external_marks": 28}}]}}]}}

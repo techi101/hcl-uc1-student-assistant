@@ -256,3 +256,13 @@ def vector_count() -> int:
         return _collection().count()
     except Exception:
         return -1
+
+
+def section_page(doc_id: str, section: str) -> int | None:
+    """Page number where a clause starts (for citations of rule clauses that were not in the retrieved chunks)."""
+    try:
+        sec = str(section).split()[0]                       # "9.5 Table 5" -> "9.5"
+        got = _collection().get(where={"$and": [{"doc_id": doc_id}, {"section": sec}]}, limit=1)
+        return int(got["metadatas"][0]["page"]) if got["ids"] else None
+    except Exception:
+        return None

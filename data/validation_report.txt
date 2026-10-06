@@ -1,0 +1,2 @@
+Validation of data\students_csv: students=32, courses=12, attendance=192, results=193
+violations: 0

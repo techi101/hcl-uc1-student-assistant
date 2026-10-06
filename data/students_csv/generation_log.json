@@ -1,0 +1,35 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "temperature": 0.7,
+  "calls": [
+    {
+      "programme": "B.Tech CSE",
+      "batch": 2023,
+      "attempt": 1,
+      "tokens": 3813,
+      "seconds": 8.1
+    },
+    {
+      "programme": "B.Tech CSE",
+      "batch": 2024,
+      "attempt": 1,
+      "tokens": 4294,
+      "seconds": 8.5
+    },
+    {
+      "programme": "B.Tech ECE",
+      "batch": 2023,
+      "attempt": 1,
+      "tokens": 3773,
+      "seconds": 7.5
+    },
+    {
+      "programme": "B.Tech ECE",
+      "batch": 2024,
+      "attempt": 1,
+      "tokens": 3880,
+      "seconds": 39.9
+    }
+  ],
+  "students": 32
+}

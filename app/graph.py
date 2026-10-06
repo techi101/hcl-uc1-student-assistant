@@ -218,16 +218,22 @@ def finalize(s: State) -> State:
         srcs = comp.get("_srcs", [])
         used = [u for u in comp.get("used_sources", []) if isinstance(u, str) and re.fullmatch(r"S\d+", u)]
         citations = [srcs[int(u[1:]) - 1] for u in used if 0 < int(u[1:]) <= len(srcs)] or srcs[:1]
+    rule_cites = []
     for c in ok_tools:
         o = c["output"] if isinstance(c["output"], dict) else {}
-        if o.get("rule_id"):
-            applied.append({"rule_id": o["rule_id"], "value": str(o.get("value")), "source_doc_id": o.get("source_doc_id", "")})
-            conflicts += [x for x in o.get("conflicts", []) + [f"upcoming: {u}" for u in o.get("upcoming", [])] if x not in conflicts]
-            if not any(ci["doc_id"] == o.get("source_doc_id") for ci in citations):
-                src = retrieval.get_source(o.get("source_doc_id", "")) or {}
-                citations.append({"doc_id": o.get("source_doc_id"), "title": src.get("title", o.get("source_doc_id")),
-                                  "section": o.get("source_section"), "page": None, "version": src.get("version"),
-                                  "effective_from": src.get("effective_from")})
+        for ru in o.get("rules_used", []):
+            applied.append({"rule_id": ru["rule_id"], "value": ru["value"], "source_doc_id": ru["source_doc_id"]})
+            src = retrieval.get_source(ru["source_doc_id"]) or {}
+            page = next((ch.get("page") for ch in s.get("chunks", []) if ch["doc_id"] == ru["source_doc_id"]
+                         and str(ch.get("section")) == str(ru["source_section"])), None)                 or retrieval.section_page(ru["source_doc_id"], ru["source_section"])
+            rule_cites.append({"doc_id": ru["source_doc_id"], "title": src.get("title", ru["source_doc_id"]),
+                               "section": ru["source_section"], "page": page, "version": src.get("version"),
+                               "effective_from": src.get("effective_from")})
+        conflicts += [x for x in o.get("conflicts", []) + [f"upcoming: {u}" for u in o.get("upcoming", [])] if x not in conflicts]
+    if atype == "calculated":
+        # a tool-based answer is supported by the rule clauses the tool used (traceable thresholds, R5), not by
+        # whatever chunks the LLM happened to mention; record lookups alone (e.g. attendance %) need no clause
+        citations = rule_cites
     cites = [{"doc_id": c["doc_id"], "title": c.get("title") or c["doc_id"], "section": str(c.get("section") or "") or None,
               "page": c.get("page"), "version": c.get("version") or None, "effective_from": c.get("effective_from") or None}
              for c in citations]
