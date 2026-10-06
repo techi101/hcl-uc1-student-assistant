@@ -209,8 +209,8 @@ def finalize(s: State) -> State:
         atype = "calculated" if ok_tools else "retrieved_fact"
         # internal source labels (S1, S2) mean nothing to a student; citations are attached separately
         def unlabel(txt) -> str:
-            t = re.sub(r"\s*\((?:S\d+(?:\s*(?:,|&|and)\s*)?)+\)", "", str(txt or ""))     # "(S1, S2)" -> ""
-            t = re.sub(r"\bS\d+(?:\s*(?:,|&|and)\s*S\d+)*\b", "the cited clause", t)       # "S1 and S2" -> words
+            t = re.sub(r"\bS\d+(?:\s*(?:,|;|&|and)\s*S\d+)*\b", "the cited clause", str(txt or ""))  # "S1 and S2"
+            t = re.sub(r"\s*\((?:the cited clause\s*[,;&]?\s*)+\)", "", t)                       # "(S1; S2)" -> ""
             return t.strip()
         answer, explanation = unlabel(comp["answer"]), unlabel(comp.get("explanation", ""))
         if comp.get("assumptions") and s.get("category") == "multi_step":

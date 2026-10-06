@@ -1,0 +1,11 @@
+rule_id,description,parameter,operator,value,scope_programmes,scope_batches,effective_from,effective_to,source_doc_id,source_section
+ATT-MIN-01,Minimum attendance to appear in MSE/ESE,min_attendance_pct,>=,75,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,11.2
+ATT-RELAX-DEAN-01,Dean (Academics) may relax attendance by up to,attendance_relax_dean_pct,<=,10,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,11.3
+ATT-RELAX-COMM-01,Committee may relax attendance further by up to,attendance_relax_committee_pct,<=,5,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,11.4
+ATT-RELAX-MAX-01,Maximum number of attendance relaxations in the programme,max_attendance_relaxations,<=,2,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,11.5
+ATT-FLOOR-01,Absolute minimum attendance; below this no relaxation and grade FD,attendance_floor_pct,>=,60,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,11.6
+PASS-ESE-01,Minimum percentage in end semester exam to pass,min_ese_pct,>=,30,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,12.7
+PASS-TOTAL-01,Minimum total marks for grade D (absolute grading),min_total_marks,>=,35,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,9.5 Table 5
+DEG-CGPA-01,Minimum CGPA for award of degree,min_cgpa_degree,>=,5.00,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,15.1
+ATT-MIN-02,Minimum attendance raised to 80% (synthetic circular),min_attendance_pct,>=,80,B.Tech,ALL,2026-08-01,,SYN-CIRC-ATT-2026,1
+ATT-MIN-03,FAQ claims 65% attendance is enough (synthetic FAQ),min_attendance_pct,>=,65,B.Tech CSE,ALL,2026-09-15,,SYN-FAQ-ATT-2026,Q1
