@@ -175,12 +175,18 @@ def run_tools(s: State) -> State:
 def compose(s: State) -> State:
     t = time.perf_counter()
     pol = s["policy"]
-    srcs = pol["applicable"][:MAX_SOURCES] + pol.get("informational", [])[:1]
+    # sources that LOST under Annex A are shown too, marked, so "according to the FAQ ..." can be answered
+    # "the FAQ says 65% but it is overridden by the circular: 80%" instead of abstaining (eval Q04)
+    lost = [dict(c, _status="overridden by a higher-authority source - NOT in force") for c in pol.get("overridden", [])[:1]] + \
+           [dict(c, _status="superseded - NOT in force") for c in pol.get("superseded", [])[:1]]
+    srcs = [dict(c, _status="in force") for c in pol["applicable"][:MAX_SOURCES]] + lost + \
+           [dict(c, _status="unofficial - informational only") for c in pol.get("informational", [])[:1]]
     ok_tools = [c for c in s.get("tools_invoked", []) if c["status"] == "ok"]
     if not srcs and not ok_tools:
         return {"composed": {"answer": "NOT_FOUND"}, "timings": _timed("compose_ms", s, t)}
     blocks = [f'<untrusted_source id="S{i}" doc="{c["doc_id"]}" title="{c.get("title", "")[:80]}" section="{c.get("section")}" '
-              f'page="{c.get("page")}" authority_level="{c.get("authority_level")}" effective_from="{c.get("effective_from")}">\n'
+              f'page="{c.get("page")}" authority_level="{c.get("authority_level")}" effective_from="{c.get("effective_from")}" '
+              f'status="{c.get("_status", "in force")}">\n'
               f'{c["text"][:900]}\n</untrusted_source>' for i, c in enumerate(srcs, 1)]
     user = (f"QUESTION: {s['question']}\nAS OF DATE: {s['as_of_date']}\n\nSOURCES (precedence order):\n" + "\n".join(blocks)
             + f"\n\nPRECEDENCE NOTES: {pol['decision']}\n\nTOOL RESULTS (computed by code, authoritative):\n"
