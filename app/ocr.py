@@ -13,12 +13,28 @@ def _engine():
 
 
 def ocr_pdf_page(pdf_path: str, page_index: int, scale: float = 2.0) -> str:
+    """OCR one page, cached on disk by file hash + page (OCR is ~10 s/page on CPU; re-ingest should be instant)."""
+    import hashlib
+    from app.config import STORAGE
+    sha = hashlib.sha256(open(pdf_path, "rb").read()).hexdigest()[:16]
+    cache = STORAGE / "ocr_cache" / f"{sha}_p{page_index + 1}.txt"
+    if cache.exists():
+        return cache.read_text(encoding="utf-8")
+    text = _ocr(pdf_path, page_index, scale)
+    if text:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(text, encoding="utf-8")
+    return text
+
+
+def _ocr(pdf_path: str, page_index: int, scale: float) -> str:
     """Render one page to an image and read its text, top-to-bottom. Returns '' on failure."""
     try:
         import numpy as np
         import pypdfium2 as pdfium
-        page = pdfium.PdfDocument(pdf_path)[page_index]
-        img = np.array(page.render(scale=scale).to_pil().convert("RGB"))
+        pdf = pdfium.PdfDocument(pdf_path)
+        img = np.array(pdf[page_index].render(scale=scale).to_pil().convert("RGB"))
+        pdf.close()
         result, _ = _engine()(img)
         if not result:
             return ""

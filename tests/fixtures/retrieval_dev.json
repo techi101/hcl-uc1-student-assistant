@@ -1,0 +1,14 @@
+[
+ {"id": "D01", "question": "What is the minimum attendance required to appear for end-semester exams?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "11.2"},
+ {"id": "D02", "question": "How do I apply for the supplementary exam?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "12.3"},
+ {"id": "D03", "question": "Can the Dean relax the attendance requirement and by how much?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "11.3"},
+ {"id": "D04", "question": "What is the minimum CGPA to get the B.Tech degree?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "15.1"},
+ {"id": "D05", "question": "How many marks do I need in the end semester exam to pass a course?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "12.7"},
+ {"id": "D06", "question": "Below what attendance can a student not appear even after relaxation?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "11.6"},
+ {"id": "D07", "question": "What is the maximum duration allowed to complete the B.Tech programme?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "7.2"},
+ {"id": "D08", "question": "What are the requirements for B.Tech with Honours?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "7.9"},
+ {"id": "D09", "question": "Who has the final power to decide in case of any dispute about the ordinance?", "expected_doc_id": "NSUT-ORD2-GAZ-2020", "expected_section": null},
+ {"id": "D10", "question": "When do classes start for new B.Tech first semester students in 2025?", "expected_doc_id": "NSUT-CIRC-ADM-2025", "expected_section": null},
+ {"id": "D11", "question": "What is the family income limit for the DHTESS scholarship?", "expected_doc_id": "NSUT-DHTESS-2023-24", "expected_section": null},
+ {"id": "D12", "question": "Is there a summer semester and when is it offered?", "expected_doc_id": "NSUT-BTECH-REG-2019", "expected_section": "12.5"}
+]

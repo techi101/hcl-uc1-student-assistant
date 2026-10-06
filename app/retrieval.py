@@ -152,7 +152,9 @@ def _collection():
     import chromadb
     config.CHROMA_DIR.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(config.CHROMA_DIR))
-    return client.get_or_create_collection(COLLECTION, metadata={"hnsw:space": "cosine"})
+    # one collection per embedding model, so configs can be compared side by side (eval) without clobbering
+    name = COLLECTION if "MiniLM-L6" in config.EMBED_MODEL else COLLECTION + "__" + re.sub(r"[^a-z0-9]+", "_", config.EMBED_MODEL.lower())[-40:]
+    return client.get_or_create_collection(name, metadata={"hnsw:space": "cosine"})
 
 
 def _init_sources_table() -> None:
@@ -189,7 +191,7 @@ def ingest_file(path: str, meta: dict, extract_rules: bool = True) -> dict:
     old = None
     with connect() as con:
         old = con.execute("SELECT file_sha256, chunks_indexed FROM sources WHERE doc_id = ?", (doc_id,)).fetchone()
-    if old and old[0] == sha and old[1]:
+    if old and old[0] == sha and old[1] and _collection().get(where={"doc_id": doc_id}, limit=1)["ids"]:
         return {"doc_id": doc_id, "chunks_indexed": old[1], "status": "already_indexed"}
 
     pages = extract_pages(path)
