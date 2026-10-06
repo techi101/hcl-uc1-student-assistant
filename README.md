@@ -63,7 +63,7 @@ would add failure points and latency without any requirement needing them.
 ### Stack (as mandated)
 Streamlit · FastAPI + Uvicorn + Pydantic v2 · LangGraph · ChromaDB (persisted in `storage/`) · SQLite ·
 sentence-transformers `all-MiniLM-L6-v2` · Ollama `qwen2.5:7b-instruct` (local) with **Groq as a cloud fallback
-behind the `LLM_PROVIDER` switch** · rapidocr (OCR for scanned PDFs) · Docker compose (in progress).
+behind the `LLM_PROVIDER` switch** · rapidocr (OCR for scanned PDFs) · Docker compose.
 
 ---
 
@@ -90,7 +90,7 @@ python -m pytest -q                                              # 33 tests
 `.env` switches: `LLM_PROVIDER=ollama | groq | mock` (mock = no LLM, for testing the pipeline), `OLLAMA_MODEL`,
 `EMBED_MODEL`, `TOP_K`. If port 8000 is busy, use `--port 8010` and set the UI's API URL in the sidebar.
 
-Docker: `docker compose up` (Dockerfile/compose being added — see [`docs/tasks/C_GEETARTH_NOW.md`](docs/tasks/C_GEETARTH_NOW.md)); Ollama runs on the host at `host.docker.internal:11434`.
+Docker: `docker compose up --build` → API http://localhost:8000, UI http://localhost:8501. One image (CPU-only torch, embedding model baked in, 893 MB); the API container runs `ingest_all` + `load_students` on start (both skip work already done) and keeps ChromaDB/SQLite in `./storage`. Ollama runs on the host and is reached at `host.docker.internal:11434` (verified from inside the container). Demo steps: [`docs/DEMO_RUNBOOK.md`](docs/DEMO_RUNBOOK.md).
 
 ---
 

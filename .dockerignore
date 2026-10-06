@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+storage/
+.git/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+eval/results_*.jsonl
+test_students/
+.playwright-mcp/

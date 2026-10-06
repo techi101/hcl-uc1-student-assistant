@@ -1,0 +1,40 @@
+# docker compose up --build   ->  API http://localhost:8000 (docs at /docs), UI http://localhost:8501
+# Ollama runs on the HOST (ollama serve; ollama pull qwen2.5:7b-instruct); containers reach it via host.docker.internal.
+# Fallback: set LLM_PROVIDER=groq (+ GROQ_API_KEY) in .env.
+services:
+  api:
+    build: .
+    image: hcl-uc1-assistant:latest
+    env_file: .env
+    environment:
+      OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # first start: build the knowledge base + load data (both skip work that's already done), then serve
+    command: >
+      sh -c "python -m scripts.ingest_all;
+             python -m scripts.load_students --dir data/students_csv --rules data/rules.csv;
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage      # ChromaDB + SQLite + OCR cache persist across restarts (no re-ingest)
+      - ./data:/app/data            # documents, source register, rules, student CSVs (judges can drop files here)
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  ui:
+    image: hcl-uc1-assistant:latest      # same image as api, different command
+    env_file: .env
+    environment:
+      API_URL: http://api:8000
+    command: streamlit run ui/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
