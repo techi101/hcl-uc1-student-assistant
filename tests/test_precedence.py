@@ -114,3 +114,15 @@ def test_pick_rule_before_circular():
 def test_pick_rule_ece_student_never_sees_cse_faq():
     out = pick_rule(RULES, "2026-10-06", {"programme": "B.Tech ECE", "batch_year": 2024})
     assert out["rule"]["rule_id"] == "ATT-MIN-02" and not out["conflicts"]
+
+
+def test_superseding_circular_is_not_overridden_by_other_clauses_of_the_same_regulation():
+    # found live 13:01: circular replacing clause 11.6 (floor 65%) was wrongly 'overridden' by clause 11.2 (75%)
+    r112 = chunk("REG", 1, "2019-07-01", "11.2 minimum attendance of 75%", section="11.2")
+    r116 = chunk("REG", 1, "2019-07-01", "11.6 attendance below 60% after relaxation", section="11.6")
+    circ = chunk("CIRC-FLOOR", 2, "2026-09-01", "In supersession of 11.6, attendance below 65% after relaxation",
+                 supersedes="REG#11.6")
+    out = resolve([r116, r112, circ], "2026-10-06", None, "minimum attendance after relaxation")
+    ids = [(c["doc_id"], c["section"]) for c in out["applicable"]]
+    assert ("CIRC-FLOOR", "1") in ids and ("REG", "11.6") not in ids and ("REG", "11.2") in ids
+    assert out["overridden"] == []

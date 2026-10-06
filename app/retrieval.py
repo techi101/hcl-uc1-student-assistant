@@ -178,8 +178,10 @@ def list_sources() -> list[dict]:
              "ingested_at": r[4]} for r in rows]
 
 
-def ingest_file(path: str, meta: dict) -> dict:
-    """Index one document. Re-ingesting the same doc_id replaces its old chunks (new version of the file)."""
+def ingest_file(path: str, meta: dict, extract_rules: bool = True) -> dict:
+    """Index one document. Re-ingesting the same doc_id replaces its old chunks (new version of the file).
+    extract_rules=True (live /ingest): also propose validated rule_registry rows from the new document.
+    Our own documents use the human-checked data/rules.csv instead (scripts/ingest_all passes False)."""
     _init_sources_table()
     m = normalise_meta(meta)
     doc_id = m["doc_id"]
@@ -211,7 +213,12 @@ def ingest_file(path: str, meta: dict) -> dict:
                     (doc_id, json.dumps(m), Path(path).name, sha, len(chunks), ocr_pages,
                      datetime.now(timezone.utc).isoformat(timespec="seconds")))
     log.info("ingested %s: %d chunks (%d OCR pages)", doc_id, len(chunks), ocr_pages)
-    return {"doc_id": doc_id, "chunks_indexed": len(chunks), "status": "replaced" if old else "indexed"}
+    rules = []
+    if extract_rules:
+        from app.rule_extract import extract_rules as _extract
+        rules = _extract(m, chunks)
+    return {"doc_id": doc_id, "chunks_indexed": len(chunks), "status": "replaced" if old else "indexed",
+            "rules_extracted": [r["rule_id"] + " = " + r["value"] for r in rules]}
 
 
 def _to_chunk(doc: str, meta: dict, distance: float) -> dict:

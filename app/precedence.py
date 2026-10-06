@@ -96,8 +96,22 @@ _STOP = set("what which when where with that this from have shall will your ther
             "does required require minimum maximum student students exam exams appear".split())
 
 
-def _numbers(text: str) -> set[str]:
-    return {m.group(1) for m in _PCT.finditer(text)} | {m.group(1).replace(",", "") for m in _MONEY.finditer(text)}
+def _numbers(text: str) -> dict[str, set[str]]:
+    return {"pct": {m.group(1) for m in _PCT.finditer(text)},
+            "money": {m.group(1).replace(",", "") for m in _MONEY.finditer(text)}}
+
+
+def _differ(na: dict, nb: dict) -> bool:
+    """True if both chunks state numbers of the same kind (% or money) and the numbers differ."""
+    return any(na[k] and nb[k] and na[k] != nb[k] for k in na)
+
+
+def _related_by_supersession(a: dict, b: dict) -> bool:
+    """A document that explicitly supersedes (part of) another speaks only to that part; its relation to the
+    other document is settled by step 2, so other clauses of that document are not 'conflicts'."""
+    def valid_sup(x: dict, y: dict) -> bool:          # only level 1-2 supersession counts (Annex A step 2)
+        return int(x.get("authority_level", 3)) <= 2 and any(d == y["doc_id"] for d, _ in _targets(x.get("supersedes", "")))
+    return valid_sup(a, b) or valid_sup(b, a)
 
 
 def _topic_words(query: str | None) -> set[str]:
@@ -146,9 +160,10 @@ def resolve(chunks: list[dict], as_of_date: str, student: dict | None, query: st
         for b in list(applicable):
             if a is b or a["doc_id"] == b["doc_id"] or a not in applicable or b not in applicable:
                 continue
-            na, nb = _numbers(a["text"]), _numbers(b["text"])
+            if _related_by_supersession(a, b):
+                continue
             shared = {w for w in topic if w in a["text"].lower() and w in b["text"].lower()} if topic else set()
-            if not na or not nb or na == nb or (topic and not shared):
+            if not _differ(_numbers(a["text"]), _numbers(b["text"])) or (topic and not shared):
                 continue
             la, lb = int(a.get("authority_level", 3)), int(b.get("authority_level", 3))
             if la != lb:

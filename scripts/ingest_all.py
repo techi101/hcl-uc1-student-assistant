@@ -25,7 +25,7 @@ def main() -> int:
             failed += 1
             continue
         t0 = time.perf_counter()
-        out = retrieval.ingest_file(str(path), row)
+        out = retrieval.ingest_file(str(path), row, extract_rules=False)
         print(f"  {out['status']:16s} {row['doc_id']:24s} chunks={out['chunks_indexed']:4d}  {time.perf_counter() - t0:5.1f}s")
     print(f"vectors in Chroma: {retrieval.vector_count()}")
     return 1 if failed else 0
