@@ -57,30 +57,15 @@ Three things to repeat in every answer: **code decides, AI words** · **every th
 ---
 
 ## 4. Files, what they do, and who owns them
+"Owns" = reviews, tests, explains and changes it live in the Q&A (matches `docs/TEAM_CONTRIBUTION.md`; most code was
+generated with Claude Code on Suryansh's laptop — see `docs/AI_USAGE.md`).
 
-| File | What it does | Owner |
-|---|---|---|
-| `app/config.py` | all settings from `.env` (provider, model, paths, top-k) | shared |
-| `app/schemas.py` | the HCL API shapes (AskRequest, AskResponse, Citation, SourceMeta — lenient so judges' metadata never 422s) | shared |
-| `app/db.py` | SQLite tables exactly as Annex C (+ audit_log), with CHECK constraints (attended ≤ held, ID format) | Suryansh (B) |
-| `app/tools.py` | attendance %, 3-tier exam eligibility, pass/fail by 12.7 + Table 5, backlogs, course lookup | Suryansh (B) |
-| `scripts/generate_data.py` | LLM writes students → Pydantic validates → code plants edge cases → CSVs | Suryansh (B) |
-| `scripts/validate_data.py` | checks the CSVs (ranges, totals, result vs marks, references) | Suryansh (B) |
-| `scripts/load_students.py` | **the judges' loader**: CSVs → SQLite, prints every rejected row with a reason | Suryansh (B) |
-| `app/retrieval.py`, `app/ocr.py` | PDF text / OCR → clause chunks → embeddings → ChromaDB; search; Source Register table | Suryansh (A) |
-| `scripts/ingest_all.py` | ingests every document in `data/source_register.csv` once | Suryansh (A) |
-| `eval/run_eval.py` | evaluation: 6 metrics, resumable, retrieval-only config comparison | Suryansh (A) |
-| `app/graph.py`, `app/prompts.py` | the 7-step LangGraph workflow and the two LLM prompts | Geetarth reviews / extends (v1 built on Suryansh's laptop) |
-| `app/precedence.py` | Annex A in code, for chunks and for rule-registry rows | Geetarth reviews / extends (v1 built on Suryansh's laptop) |
-| `app/rule_extract.py` | on `/ingest`, LLM proposes rule rows; kept only if the number appears verbatim in the clause | Geetarth reviews / extends |
-| `app/main.py`, `app/llm.py`, `app/audit.py` | 5 endpoints (never a 500 on /ask), Ollama/Groq/mock switch with fallback, audit table | Geetarth (C) |
-| `ui/streamlit_app.py` | chat, answer-type badges, citations, tools/audit panels, ingest form, Source Register | Geetarth (C) |
-| `Dockerfile`, `docker-compose.yml` | packaging | Geetarth (C) — to build |
-| `data/rules.csv`, `data/source_register.csv`, `data/docs/SYN-*.md` | rule rows, document catalogue, 2 synthetic docs | Neetu (D) |
-| `eval/testset.json`, `README.md`, `docs/AI_USAGE.md`, `docs/TEAM_CONTRIBUTION.md` | evaluation questions, documentation | Neetu (D) |
-| `tests/` | 33 tests: precedence (incl. HCL's worked example), graph/API, tools | each owner |
-
----
+| Owner | Hard | Medium | Easy |
+|---|---|---|---|
+| **Suryansh** — documents in + evaluation | `app/retrieval.py` (ingestion, clause chunking, Chroma search, supersession pull-in) | `app/rule_extract.py` (rules from new docs on `/ingest`), `eval/testset.json`, `eval/run_eval.py` | `app/ocr.py`, `scripts/ingest_all.py`, `data/source_register.csv`, the 2 synthetic docs, `eval/retrieval_comparison.md` |
+| **Geetarth** — workflow + safety + serving + demo | `app/graph.py` (7 steps, code-first authorisation, finalize) | `ui/streamlit_app.py`, `Dockerfile` + `docker-compose.yml` | `app/main.py`, `app/llm.py` (provider switch, fallback, 429 back-off), `app/audit.py`, `app/prompts.py`, `docs/MODEL_CHOICE.md` |
+| **Neetu** — rules + students + paperwork | `app/precedence.py` (Annex A on chunks and rule_registry) | `app/tools.py` (3-tier attendance, pass/fail, backlogs), `scripts/generate_data.py` | `data/rules.csv`, `app/db.py`, `scripts/validate_data.py`, `scripts/load_students.py`, `scripts/load_rules.py`, `samples/`, `docs/AI_USAGE.md`, `docs/TEAM_CONTRIBUTION.md`, `docs/DATA_CARD.md` |
+| shared | | | `README.md`, `app/config.py`, `app/schemas.py`, `tests/` (each owner keeps the tests of their files) |
 
 ## 5. Likely judge questions (short answers)
 
@@ -90,20 +75,20 @@ Three things to repeat in every answer: **code decides, AI words** · **every th
 - *Where is the API key?* In `.env`, which is git-ignored; never in code.
 - *What if Ollama is down?* `llm.chat` falls back to Groq automatically; `/health` shows which provider is active.
 
-**Suryansh (data + search)**
+**Suryansh (documents + search + evaluation)**
 - *Why chunk by clause?* So a citation can say "section 11.2, page 18" and a circular can supersede exactly one clause.
 - *How did you use AI for the data?* Prompt saved verbatim; Pydantic validates every response (retry on failure); code, not the LLM, derives totals, results and backlogs and plants the edge cases.
 - *What did the LLM get wrong?* It clustered weak students — 5 students fail all 6 courses; we disclosed it in the data card.
 - *A bug you found?* Exam sessions were sorted as text, so "2026-JUL" came before "2026-MAY" and a re-registration pass didn't clear the backlog — a test caught it; fixed with a (year, month) sort.
 - *Why MiniLM?* Tied with bge-small on hit@3 (11/12 on our dev set); smaller and faster; both separate unanswerable questions poorly, so not_found also uses the LLM's signal.
 
-**Geetarth (flow + precedence + API)**
+**Geetarth (flow + safety + API + Docker)**
 - *Walk through Annex A on the worked example:* regulation 75% (L1), circular 80% supersedes the clause (L2), FAQ 65% (L4); on 2026-10-06 → 80% by step 2, FAQ overridden by step 3; on 2026-07-15 → 75%, circular reported as upcoming.
 - *Why can't a department notice supersede the regulation?* Step 2 only accepts explicit supersession from level 1–2 documents.
 - *How does a judge's new circular change eligibility without a code change?* `/ingest` indexes it and extracts rule rows (value must appear verbatim); `get_rule_in_force` picks the winning row by Annex A, so the tool's threshold changes.
 - *Who decides answer_type?* Code in `finalize`, never the LLM.
 
-**Neetu (content + evaluation)**
+**Neetu (precedence + rules + students + paperwork)**
 - *How is the test set built?* ≥ 20 questions with the brief's mix (unanswerable, conflicts, personal via tools, other-student attempts, multi-step), each with expected answer, answer_type and source checked against the PDF page.
 - *How are answers scored?* Exact match on answer_type and on every number/date; citation accuracy = expected document + section cited; no LLM judge.
 
@@ -111,6 +96,6 @@ Three things to repeat in every answer: **code decides, AI words** · **every th
 
 ## 6. A small live change to rehearse (one each)
 
-- **Suryansh:** add a check in `scripts/validate_data.py` that `cgpa` has at most 2 decimals; run it → 0 violations.
+- **Suryansh:** run the retrieval-only eval at k=3 vs k=5 (`python -m eval.run_eval --retrieval-only --k 3`) and explain the difference.
 - **Geetarth:** change `MIN_SCORE` in `app/graph.py` from 0.50 to 0.55 and show the Antarctica question still returns not_found and the attendance question still answers.
-- **Neetu:** add a rule row (e.g. a placement CGPA cut-off) to `data/rules.csv`, run `python -m scripts.load_rules`, and show it in the registry.
+- **Neetu:** add a rule row to `data/rules.csv` (e.g. change the floor 60 → 65 with a new effective date), run `python -m scripts.load_rules`, and show S1002's eligibility change.

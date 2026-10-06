@@ -109,7 +109,9 @@ def main() -> None:
 
     out_path = ROOT / f"results_{cfg}.jsonl"
     done = {}
-    if out_path.exists() and not a.fresh:
+    if a.fresh and out_path.exists():
+        out_path.unlink()                    # --fresh really starts over (was appending to old rows)
+    if out_path.exists():
         done = {json.loads(l)["id"]: json.loads(l) for l in out_path.read_text(encoding="utf-8").splitlines() if l}
     if a.url:
         import httpx
