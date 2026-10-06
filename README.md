@@ -144,15 +144,27 @@ edge-case IDs: [`data/students_csv/edge_cases.json`](data/students_csv/edge_case
 
 ## 6. Evaluation
 
-Runner: `python -m eval.run_eval` (all 6 HCL metrics, resumable) · `python -m eval.run_eval --retrieval-only` (no LLM).
-Test set: `eval/testset.json` (in progress). **Results: not measured yet on the full test set** — this section will
-contain only numbers from a real run.
+Full report: [`eval/REPORT.md`](eval/REPORT.md) · test set: [`eval/testset.json`](eval/testset.json) (29 labelled questions in
+HCL's mandated mix, every expected answer checked against its source) · runner: `python -m eval.run_eval` ·
+retrieval comparison: [`eval/retrieval_comparison.md`](eval/retrieval_comparison.md).
 
-Measured so far (development checks, not the evaluation):
-- Model choice (5 routing questions): qwen2.5:7b + category definitions 5/5 vs 3B 2/5 — [`docs/MODEL_CHOICE.md`](docs/MODEL_CHOICE.md)
-- Retrieval on a 12-question dev set: hit@3 = 11/12 for both MiniLM and bge-small; both separate answerable from
-  unanswerable questions poorly (top-score gap +0.013 / +0.020) → the not_found decision uses a score floor **and** the
-  LLM's "sources don't say" signal.
+Real pipeline end to end (`POST /ask`, the 7-step graph, real ChromaDB + SQLite, **no mock mode**); LLM = the Groq
+fallback, because local qwen2.5:7b took 80–200 s per question on our CPU-only laptop. Exact-match scoring, no LLM judge.
+
+| Metric | Result |
+|---|---|
+| Answer correctness | **24/29 = 83%** |
+| Citation accuracy | 15/20 = 75% |
+| Abstention accuracy | 27/29 = 93% |
+| Tool-result correctness | **9/9 = 100%** |
+| Retrieval hit rate@5 | 16/20 = 80% |
+| Other-student requests | 3/3 refused, 0 leaks (code, before any LLM call) |
+| Prompt injection (FAQ line) | resisted |
+| Latency p50 / p95 · cost | 6.8 s / 35.3 s · 1.6 LLM calls, ~1,216 tokens per question |
+
+Every error was cautious (refused / not_found), none unsafe. Config choice by the numbers: MiniLM hit@5 16/20 vs
+bge-small 11/20 → MiniLM. Our documents are real NSUT PDFs (scanned pages, tables, real conflicts), so the scores are
+not all 100%. Failures and their root causes (and the fixes made after the run) are listed in the report.
 
 ---
 
@@ -176,7 +188,7 @@ in a later session clears a backlog (sessions sorted by year + month, not as tex
 
 ## 8. Team, AI usage, integrity
 
-Team of 3 (a fourth member left during the day): Suryansh, Geetarth, Neetu — contribution statement in
-`docs/TEAM_CONTRIBUTION.md` (being written). AI coding assistants (Claude Code) were used to write most of the code from our
-prompts; how we verified it (33 tests, evaluation, manual checks against the PDFs) is in `docs/AI_USAGE.md` (being written).
+Team of 3 (a fourth member left during the day): Suryansh, Geetarth, Neetu — ownership and contribution statement in
+[`docs/TEAM_CONTRIBUTION.md`](docs/TEAM_CONTRIBUTION.md) (includes the signed declaration). AI coding assistants (Claude Code) were used to write most of the code from our
+prompts; how we verified it (33 tests, evaluation, manual checks against the PDFs) is in [`docs/AI_USAGE.md`](docs/AI_USAGE.md).
 No real student data is used anywhere; student IDs S9000–S9999 and course codes `JDG*` are left free for the judges.
