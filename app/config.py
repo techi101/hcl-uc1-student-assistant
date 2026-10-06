@@ -9,7 +9,7 @@ load_dotenv(ROOT / ".env")
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")          # ollama | groq | mock
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 TOP_K = int(os.getenv("TOP_K", "5"))
