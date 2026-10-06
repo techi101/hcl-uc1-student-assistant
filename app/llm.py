@@ -63,6 +63,8 @@ def chat(system: str, user: str, json_mode: bool = False) -> dict:
 def health() -> str:
     if config.LLM_PROVIDER == "mock":
         return "mock"
+    if config.LLM_PROVIDER == "groq":
+        return f"ok (groq:{config.GROQ_MODEL} — cloud fallback mode)" if os.getenv("GROQ_API_KEY") else "down (no GROQ_API_KEY)"
     try:
         httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=3).raise_for_status()
         return f"ok (ollama:{config.OLLAMA_MODEL})"
