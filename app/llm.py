@@ -24,9 +24,9 @@ log = logging.getLogger(__name__)
 # WHY: Ollama is the default (HCL wants a local model first). It listens on http://localhost:11434.
 # temperature 0 = always pick the most likely word, so the same question gives the same answer (repeatable).
 # num_predict 350 = at most 350 output tokens. num_ctx 4096 = how much text the model can read at once.
-# keep_alive "30m" = keep the model loaded in memory for 30 minutes, so later calls are fast.
+# keep_alive "4h" = keep the model loaded in memory for 4 hours, so later calls (and a long demo) stay fast.
 def _ollama(system: str, user: str, json_mode: bool) -> dict:
-    body = {"model": config.OLLAMA_MODEL, "stream": False, "options": {"temperature": 0, "num_predict": 350, "num_ctx": 4096}, "keep_alive": "30m",
+    body = {"model": config.OLLAMA_MODEL, "stream": False, "options": {"temperature": 0, "num_predict": 350, "num_ctx": 4096}, "keep_alive": "4h",
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
     # json_mode: ask Ollama to force the reply to be valid JSON (used by the classifier and composer).
     if json_mode:
@@ -121,7 +121,12 @@ def health() -> str:
         return f"ok (groq:{config.GROQ_MODEL} — cloud fallback mode)" if os.getenv("GROQ_API_KEY") else "down (no GROQ_API_KEY)"
     # Ollama mode: ask Ollama for its model list (/api/tags), with a 3 second timeout. Reply means it is alive.
     try:
-        httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=3).raise_for_status()
+        r = httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=3)
+        r.raise_for_status()
+        # Ollama answering is not enough: a missing model 404s on every chat call, so check it is pulled
+        names = {m.get("name") for m in r.json().get("models", [])}
+        if config.OLLAMA_MODEL not in names and f"{config.OLLAMA_MODEL}:latest" not in names:
+            return f"down (model {config.OLLAMA_MODEL} not pulled: ollama pull {config.OLLAMA_MODEL})"
         return f"ok (ollama:{config.OLLAMA_MODEL})"
     # Ollama did not reply: say whether Groq will take over or nothing can answer.
     except Exception:

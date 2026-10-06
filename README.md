@@ -6,6 +6,7 @@ eligibility decision is computed by **code**, conflicting/versioned documents ar
 Precedence Policy (Annex A)**, and when the sources don't say, it answers *"I could not find this information in the
 authorised university sources."*
 
+> **Full flow, end to end (query, ingestion, data, agents, APIs): [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md)** ·
 > Problem statement (full transcript): [`docs/PROBLEM_STATEMENT.md`](docs/PROBLEM_STATEMENT.md) ·
 > How the system works, file by file: [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) ·
 > Design sign-off doc: [`docs/SPRINT0_DESIGN.md`](docs/SPRINT0_DESIGN.md)

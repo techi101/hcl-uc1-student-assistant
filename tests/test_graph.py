@@ -114,3 +114,11 @@ def test_general_eligibility_rule_question_without_login_is_not_refused(monkeypa
     assert not out.get("refused") and out["category"] == "policy"
     out2 = g.classify({"question": "Am I eligible for the CS201 exam?", "student": None, "timings": {}})
     assert out2.get("refused")
+
+
+def test_me_returns_profile_for_known_header_and_404_otherwise():
+    # the UI's sign-in check: identity only from the header, unknown or missing ID cannot sign in
+    r = client.get("/me", headers={"X-Student-Id": "s1002"})
+    assert r.status_code == 200 and r.json()["student_id"] == "S1002" and "cgpa" not in r.json()
+    assert client.get("/me", headers={"X-Student-Id": "S8888"}).status_code == 404
+    assert client.get("/me").status_code == 404

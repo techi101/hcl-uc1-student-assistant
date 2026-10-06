@@ -1,4 +1,4 @@
-"""FastAPI app: the 5 endpoints fixed by HCL (Section 6). Owner: C."""
+"""FastAPI app: the 5 endpoints fixed by HCL (Section 6) + GET /me for the UI sign-in. Owner: C."""
 # WHAT THIS FILE IS: the "front door" of the backend. It defines the 5 web addresses that HCL fixed.
 # An ENDPOINT is one web address + one method that the server answers, like "POST /ask" or "GET /health".
 # The 5 endpoints: POST /ask, POST /ingest, GET /health, GET /audit/{trace_id}, GET /sources.
@@ -6,10 +6,12 @@
 # and header "X-Student-Id: S1001". This file passes that to graph.run(), which returns the JSON answer.
 # FastAPI = the Python web framework that turns these functions into a web server (run by uvicorn).
 # json = read the metadata text sent with /ingest. logging = write messages to the server log.
-# shutil = copy the uploaded file to disk. uuid = make a random id. date = today's date.
+# shutil = copy the uploaded file to disk. threading = run the startup warm-up in the background.
+# uuid = make a random id. date = today's date.
 import json
 import logging
 import shutil
+import threading
 import uuid
 from datetime import date
 
@@ -18,8 +20,8 @@ from datetime import date
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 
 # Our own modules: audit (saved records), config (settings), graph (the LangGraph workflow),
-# llm (talks to Ollama/Groq), retrieval (ChromaDB search + ingest), db (SQLite connection).
-from app import audit, config, graph, llm, retrieval
+# llm (talks to Ollama/Groq), retrieval (ChromaDB search + ingest), tools (student lookups), db (SQLite connection).
+from app import audit, config, graph, llm, retrieval, tools
 from app.db import connect, init_db
 # Pydantic shapes of requests and responses (see app/schemas.py).
 from app.schemas import AskRequest, AskResponse, IngestResponse, SourceMeta
@@ -30,6 +32,24 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 app = FastAPI(title="NSUT Student Services Assistant")
 # Make sure the SQLite tables exist before the first request arrives (safe to run every start).
 init_db()
+
+
+# IN: nothing  ->  OUT: nothing; loads the embedding model, Chroma and the LLM into memory once.
+# WHY: pay the cold-start cost at boot, not on the first question: measured 9 s to load the embedder and
+# 23-31 s for Ollama to load the model into RAM. Runs in a thread so the API is up immediately.
+def _warm_up() -> None:
+    try:
+        retrieval.search("minimum attendance", 1)
+        if config.LLM_PROVIDER != "mock":
+            llm.chat("Reply with {}", "ping", json_mode=True)
+        logging.info("warm-up done: embedder, Chroma and LLM loaded")
+    except Exception as e:  # warm-up is an optimisation; never block startup on it
+        logging.warning("warm-up skipped: %s", e)
+
+
+@app.on_event("startup")
+def _start_warm_up() -> None:
+    threading.Thread(target=_warm_up, daemon=True).start()
 
 
 # ---------- POST /ask: answer one student question ----------
@@ -108,6 +128,20 @@ def health():
 # IN: a trace_id in the address, e.g. GET /audit/3f9a1c2b  ->  OUT: the full saved audit record (Annex D).
 # WHY: every answer must be explainable later: category, sources, precedence decision, tools, rules, model, timings.
 # If no record has that id, reply HTTP status 404 (404 = "not found").
+# ---------- GET /me: UI sign-in check ----------
+# IN: header X-Student-Id  ->  OUT: profile basics (no marks or CGPA), or HTTP 404 if the ID is unknown or missing.
+# WHY: the UI must not let an invalid ID into the chat. Identity still comes only from the header (R7),
+# and the reply is about the caller's own ID, never another student's.
+@app.get("/me")
+def me(x_student_id: str | None = Header(default=None)):
+    sid = (x_student_id or "").strip().upper()
+    student = tools.get_student(sid) if sid else None
+    if not student:
+        raise HTTPException(404, "unknown student ID")
+    keys = ("student_id", "full_name", "programme", "batch_year", "current_semester")
+    return {k: student[k] for k in keys}
+
+
 @app.get("/audit/{trace_id}")
 def get_audit(trace_id: str):
     rec = audit.get(trace_id)

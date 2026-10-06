@@ -1,12 +1,15 @@
 [theme]
 base = "light"
-primaryColor = "#4338CA"
 backgroundColor = "#F7F7FB"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#1F2333"
 borderColor = "#E4E4EE"
 showWidgetBorder = true
-baseRadius = "10px"
+baseRadius = "12px"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+primaryColor = "#4F46E5"
 
 [client]
 toolbarMode = "minimal"
+
