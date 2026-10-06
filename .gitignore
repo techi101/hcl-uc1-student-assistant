@@ -8,3 +8,6 @@ storage/
 *.db
 logs/
 .pytest_cache/
+*.log
+.env.*
+!.env.example
