@@ -1,25 +1,45 @@
+# WHAT THIS FILE IS: starts the whole system with one command. Docker Compose reads it and runs 2 CONTAINERS
+# (running copies of our image): "api" (FastAPI backend) and "ui" (Streamlit chat page). Both use ONE image.
+# Real example: run "docker compose up --build", wait for api to turn healthy, then open http://localhost:8501,
+# type "What is the minimum attendance?" and the UI calls the API at http://api:8000/ask inside Docker's network.
 # docker compose up --build   ->  API http://localhost:8000 (docs at /docs), UI http://localhost:8501
 # Ollama runs on the HOST (ollama serve; ollama pull qwen2.5:7b-instruct); containers reach it via host.docker.internal.
 # Fallback: set LLM_PROVIDER=groq (+ GROQ_API_KEY) in .env.
+# services = the list of containers to run.
 services:
+  # ---------- api: the FastAPI backend ----------
   api:
+    # Build the image from the Dockerfile in this folder and name it, so the ui service can reuse it.
     build: .
     image: hcl-uc1-assistant:latest
+    # Load every NAME=value line from .env as environment variables (LLM_PROVIDER, GROQ_API_KEY, ...).
     env_file: .env
+    # Then override OLLAMA_URL: inside a container "localhost" means the container itself,
+    # so we point to host.docker.internal, which means "the laptop running Docker", where Ollama listens.
     environment:
       OLLAMA_URL: http://host.docker.internal:11434
+    # On Linux, host.docker.internal does not exist by default. This line creates it (host-gateway = the host's address).
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # first start: build the knowledge base + load data (both skip work that's already done), then serve
+    # Step 1 ingests all documents into ChromaDB. Step 2 loads student CSVs + rules.csv into SQLite.
+    # Step 3 starts the API. ">" in YAML joins the next lines into one line; ";" runs the commands one after another.
     command: >
       sh -c "python -m scripts.ingest_all;
              python -m scripts.load_students --dir data/students_csv --rules data/rules.csv;
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # PORT MAPPING "laptop:container": port 8000 on the laptop forwards to port 8000 in the container,
+    # so http://localhost:8000 on the laptop reaches the API.
     ports:
       - "8000:8000"
+    # VOLUMES "laptop folder:container folder": the container reads and writes the real laptop folders,
+    # so data survives when the container is deleted or rebuilt.
     volumes:
       - ./storage:/app/storage      # ChromaDB + SQLite + OCR cache persist across restarts (no re-ingest)
       - ./data:/app/data            # documents, source register, rules, student CSVs (judges can drop files here)
+    # HEALTHCHECK = Docker runs a test command again and again to know if the container is really ready.
+    # Here: curl calls GET /health (-f = fail on an HTTP error, -s = silent). Every 15s, 5s timeout,
+    # up to 20 failures allowed, and failures in the first 60s do not count (ingest takes time on first start).
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8000/health"]
       interval: 15s
@@ -27,14 +47,21 @@ services:
       retries: 20
       start_period: 60s
 
+  # ---------- ui: the Streamlit chat page ----------
   ui:
+    # No build line: it reuses the image the api service built.
     image: hcl-uc1-assistant:latest      # same image as api, different command
     env_file: .env
+    # API_URL tells the UI where the backend is. Inside Docker's network, "api" is the api container's name.
     environment:
       API_URL: http://api:8000
+    # Replace the image's default uvicorn command with Streamlit on port 8501.
+    # --server.headless true = do not try to open a browser inside the container.
     command: streamlit run ui/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    # Laptop port 8501 forwards to the container's port 8501: open http://localhost:8501.
     ports:
       - "8501:8501"
+    # Start the UI only after the api healthcheck passes, so the first question never hits a half-started API.
     depends_on:
       api:
         condition: service_healthy
