@@ -103,7 +103,10 @@ def classify(s: State) -> State:
     if cat == "other_student":          # the LLM may ADD a refusal, never remove one
         upd["refused"] = "You can only access your own records. Requests for another student's data are not allowed."
     if cat in ("personal", "eligibility") and not s.get("student"):
-        upd["refused"] = "Please log in: personal questions need your student ID (X-Student-Id header)."
+        if PRONOUN.search(s["question"]):     # "am I eligible ..." without login -> refuse
+            upd["refused"] = "Please log in: personal questions need your student ID (X-Student-Id header)."
+        else:                                 # "is 65% enough to appear ..." is a general rule question (eval Q04 bug)
+            upd["category"] = "policy"
     upd["timings"] = _timed("classify_ms", s, t)
     return upd
 

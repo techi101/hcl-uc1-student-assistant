@@ -61,3 +61,15 @@ def test_ingest_accepts_lenient_metadata():
 def test_health_reports_all_components():
     h = client.get("/health").json()
     assert set(h) >= {"api", "vector_store", "sqlite", "llm"}
+
+
+def test_general_eligibility_rule_question_without_login_is_not_refused(monkeypatch):
+    # eval Q04 bug (15:10): the router labelled a general rule question "eligibility" and it was refused for no login
+    from app import graph as g
+    monkeypatch.setattr(g.llm, "chat", lambda *a, **k: {"text": '{"category": "eligibility", "course_hint": null}',
+                                                        "model": "mock", "tokens": 0, "ms": 0})
+    out = g.classify({"question": "According to the CSE department help-desk FAQ, is 65% attendance enough to appear "
+                                  "in the end-semester examination?", "student": None, "timings": {}})
+    assert not out.get("refused") and out["category"] == "policy"
+    out2 = g.classify({"question": "Am I eligible for the CS201 exam?", "student": None, "timings": {}})
+    assert out2.get("refused")

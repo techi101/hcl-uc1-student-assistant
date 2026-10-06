@@ -50,13 +50,22 @@ def chat(system: str, user: str, json_mode: bool = False) -> dict:
     t0 = time.perf_counter()
     last_err = None
     for name in order:
-        try:
-            out = PROVIDERS[name](system, user, json_mode)
-            out["ms"] = round((time.perf_counter() - t0) * 1000)
-            return out
-        except Exception as e:  # network down, model missing, 429 ...
-            last_err = e
-            log.warning("LLM provider %s failed: %s", name, e)
+        for attempt in range(4):
+            try:
+                out = PROVIDERS[name](system, user, json_mode)
+                out["ms"] = round((time.perf_counter() - t0) * 1000)
+                return out
+            except Exception as e:  # network down, model missing, 429 ...
+                last_err = e
+                if "429" in str(e) or "rate limit" in str(e).lower():
+                    # rate limit (Groq free tier: 8K tokens/min) -> back off and retry instead of failing the answer;
+                    # found in the eval: a 429 during compose turned a correct answer into not_found
+                    wait = 2 ** attempt * 2
+                    log.warning("LLM %s rate-limited, retry in %ss (attempt %d)", name, wait, attempt + 1)
+                    time.sleep(wait)
+                    continue
+                log.warning("LLM provider %s failed: %s", name, e)
+                break
     raise RuntimeError(f"all LLM providers failed: {last_err}")
 
 
