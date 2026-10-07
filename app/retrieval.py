@@ -23,6 +23,8 @@ import hashlib
 import json
 # logging: log messages for the server log (instead of print)
 import logging
+# math.log: rare keywords count more in the hybrid re-rank (idf)
+import math
 # re = regular expressions: patterns that find text like "11.2" or "2019-20"
 import re
 # datetime: timestamp for "ingested_at", in UTC (world time, no time zone confusion)
@@ -104,7 +106,13 @@ def normalise_meta(meta: dict) -> dict:
     # supersedes: keep only tokens that look like doc ids (DOC-ID or DOC-ID#7.2)
     # Regex: a capital letter, then 3 or more capitals/digits/hyphens (the doc id), then optionally "#" + digits and
     # dots (the clause). Matches "NSUT-BTECH-REG-2019#11.2" and "SYN-CIRC-ATT-2026". Several ids are joined with ";".
-    m["supersedes"] = ";".join(re.findall(r"[A-Z][A-Z0-9-]{3,}(?:#[\d.]+)?", m["supersedes"]))
+    # A doc id always contains a hyphen (NSUT-BTECH-REG-2019), so plain words like "UNSURE" are not taken as ids.
+    # A note that only describes a possible partial supersession ("... UNSURE; ... do not supersede") is NOT
+    # applied: a wrong supersession silently deletes a whole document from every answer (found: the 2026-27 fee
+    # notice was wiping out the 2025-26 fee tables).
+    sup = m["supersedes"]
+    m["supersedes"] = "" if re.search(r"unsure|do not supersede|only for", sup, re.I) else \
+        ";".join(re.findall(r"[A-Z][A-Z0-9]*-[A-Z0-9-]{2,}(?:#[\d.]+)?", sup))
     return m
 
 
@@ -183,6 +191,31 @@ _PAGE_NUM = re.compile(r"^\d{1,3}$")                               # bare page n
 # IN: pages from extract_pages  ->  OUT: list of chunks, each {"section", "page", "text"}.
 # WHY: one clause per chunk means a search hit is one whole rule with a clean citation (doc + section + page).
 # Example: lines "11.2 Attendance ... 75% ..." up to "11.3 ..." -> one chunk {"section": "11.2", "page": <start page>, "text": "11.2 ..."}.
+OCR_WINDOW = 2000         # chars per piece of a scanned page: one fee-table page (~1,900 chars) stays ONE chunk
+OCR_OVERLAP = 200         # longer pages: pieces overlap so a table row cut at a boundary appears whole in one of them
+OCR_HEAD_LINES = 4        # top lines of a scanned page = programme name + column headers (e.g. "2025-26 2026-27 ...")
+
+
+# IN: page number + OCR text of one scanned page  ->  OUT: chunks labelled "page N", each starting with the page header.
+# flow: lines -> header = first 4 lines -> 2000-char windows with 200 overlap -> later windows get "[header]" in front
+def _ocr_page_chunks(page_no: int, text: str) -> list[dict]:
+    lines = [ln for ln in text.splitlines() if ln.strip() and not _PAGE_NUM.match(ln)]
+    body = "\n".join(lines)
+    if len(body) < 20:
+        return []
+    head = " / ".join(lines[:OCR_HEAD_LINES])[:300]
+    out, start = [], 0
+    while True:
+        piece = body[start:start + OCR_WINDOW]
+        # the first window already starts with the header; later ones get it in front so "Tuition Fee 97,000"
+        # still says "Bachelor of Technology ... 2025-26 2026-27 2027-28 2028-29"
+        out.append({"section": f"page {page_no}", "page": page_no, "ocr": True,
+                    "text": piece if start == 0 else f"[{head}]\n{piece}"})
+        if start + OCR_WINDOW >= len(body):
+            return out
+        start += OCR_WINDOW - OCR_OVERLAP
+
+
 def chunk_pages(pages: list[tuple[int, str, bool]]) -> list[dict]:
     """One chunk per numbered clause (keeps section + start page). Text before the first numbered
     clause (cover pages, fee tables, OCR pages without numbering) becomes one chunk per page."""
@@ -211,7 +244,16 @@ def chunk_pages(pages: list[tuple[int, str, bool]]) -> list[dict]:
 
     # Main loop: go through every line of every page.
     # flow: line -> page number? skip -> starts a new clause? (save old clause, start new one) : add line to current clause
-    for page_no, text, _ in pages:
+    for page_no, text, was_ocr in pages:
+        # Scanned page (OCR): it is usually a TABLE (fee structure, scholarship list), and its row numbers
+        # ("1.1 Tuition Fee", "2.1 Student Fund") look like clause numbers. Cutting there gave chunks like
+        # "1.1 Tuition Fee 97,000 108,000" that no longer say WHICH programme or WHICH year each column is.
+        # So a scanned page is chunked by page instead, and every piece repeats the page's header lines.
+        if was_ocr:
+            flush()
+            chunks.extend(_ocr_page_chunks(page_no, text))
+            cur = {"section": "", "page": page_no + 1, "lines": []}
+            continue
         for line in text.splitlines():
             # Bare page-number line like "12" -> skip it.
             if _PAGE_NUM.match(line):
@@ -353,13 +395,17 @@ def ingest_file(path: str, meta: dict, extract_rules: bool = True) -> dict:
     base = {k: m[k] for k in REGISTER_FIELDS}
     # Build 3 lists that line up for ChromaDB: ids ("NSUT-BTECH-REG-2019::0", "::1", ...), texts, and metadata.
     # Each chunk's metadata = document metadata + its own section, page and file name.
-    ids, docs, metas = [], [], []
+    ids, docs, metas, to_embed = [], [], [], []
     for i, ch in enumerate(chunks):
         ids.append(f"{doc_id}::{i}")
         docs.append(ch["text"])
-        metas.append({**base, "section": ch["section"], "page": int(ch["page"]), "file_name": Path(path).name})
+        # scanned pages are EMBEDDED with the document title in front ("Annual Fee ... Academic Session 2025-26"), so
+        # search can tell the 2025-26 fee table from the 2026-27 one; the stored text stays short (the LLM sees 900 chars)
+        to_embed.append(f"[{m['title'][:160]}]\n{ch['text']}" if ch.get("ocr") else ch["text"])
+        metas.append({**base, "section": ch["section"], "page": int(ch["page"]), "file_name": Path(path).name,
+                      "ocr": bool(ch.get("ocr"))})   # compose shows scanned pages in full (app/graph.py)
     # Save everything in one call. embed(docs) computes the 384-number embedding of every chunk text.
-    col.add(ids=ids, documents=docs, metadatas=metas, embeddings=embed(docs))
+    col.add(ids=ids, documents=docs, metadatas=metas, embeddings=embed(to_embed))
 
     # Count how many pages needed OCR (shown in the register).
     ocr_pages = sum(1 for _, _, was_ocr in pages if was_ocr)
@@ -392,6 +438,36 @@ def _to_chunk(doc: str, meta: dict, distance: float) -> dict:
 # Example: "minimum attendance?" -> NSUT-BTECH-REG-2019 clause 11.2 among the top-k, plus the best chunk of circular
 # SYN-CIRC-ATT-2026 marked "added_by": "supersession", because it supersedes NSUT-BTECH-REG-2019#11.2.
 # flow: question -> embedding -> top-k nearest chunks -> add best chunk of each document that supersedes a found one
+# ---------- hybrid search: meaning (embeddings) + rare keywords ----------
+# Why: scanned fee notices have 13 programmes whose pages look the same to the embedding ("Tuition Fee ... University
+# Fee ..."); the word that tells them apart ("B.Tech", "M.Tech", "2025-26") is a keyword. Measured on our 20 eval
+# questions + 8 scanned-PDF questions: weight 0 -> 15/20 + 5/8 in top 5; weight 0.2 -> 16/20 + 8/8.
+HYBRID_POOL = 25          # embedding candidates looked at before re-ranking
+KW_WEIGHT = 0.2           # final order = cosine score + 0.2 x keyword match (0..1); "score" itself stays the cosine
+_KW_STOP = set("what which when where with that this from have shall will your there their about would could should "
+               "does the and for are is in of to a an my me i do how can per".split())
+
+
+def _squash(s: str) -> str:
+    return re.sub(r"\s+", "", s.lower())        # OCR glues words ("Bachelorof"), so match without spaces
+
+
+# IN: question + candidate chunks  ->  OUT: same chunks, best first by (cosine + KW_WEIGHT x keyword match).
+# keyword match = share of the question's words found in the chunk, each word weighted by how RARE it is among the
+# candidates (idf): "B.Tech" on 2 of 25 pages counts a lot, "fee" on all 25 counts almost nothing.
+def _keyword_rerank(query: str, cands: list[dict]) -> list[dict]:
+    words = {w for w in re.findall(r"[a-z0-9][a-z0-9.\-]*[a-z0-9]", query.lower())
+             if w not in _KW_STOP and (len(w) > 2 or any(ch.isdigit() for ch in w))}
+    if not words or not cands:
+        return cands
+    texts = [_squash(c["text"] + " " + str(c.get("title", ""))) for c in cands]   # title says "Session 2025-26"
+    idf = {w: math.log(1 + len(cands) / (1 + sum(_squash(w) in t for t in texts))) for w in words}
+    total = sum(idf.values()) or 1.0
+    for c, t in zip(cands, texts):
+        c["kw"] = round(sum(idf[w] for w in words if _squash(w) in t) / total, 3)
+    return sorted(cands, key=lambda c: -(c["score"] + KW_WEIGHT * c["kw"]))
+
+
 def search(query: str, k: int, where: dict | None = None) -> list[dict]:
     """Top-k chunks with metadata + cosine similarity score, plus chunks of any document that
     explicitly supersedes a found document/clause (so precedence can see both sides)."""
@@ -401,11 +477,13 @@ def search(query: str, k: int, where: dict | None = None) -> list[dict]:
         return []
     # Turn the question into an embedding (same model as the chunks, so the numbers are comparable).
     q = embed([query])
-    # Ask ChromaDB for the k nearest chunks (never more than it holds). where = optional filter like {"doc_id": "..."}.
-    res = col.query(query_embeddings=q, n_results=min(k, col.count()), where=where)
+    # Ask ChromaDB for the HYBRID_POOL nearest chunks (never more than it holds), then keep the best k after the
+    # keyword re-rank below. where = optional filter like {"doc_id": "..."}.
+    res = col.query(query_embeddings=q, n_results=min(max(k, HYBRID_POOL), col.count()), where=where)
     # ChromaDB answers with lists of lists (one inner list per question; we sent 1 question, so take [0]).
     # zip pairs each text with its metadata and distance; _to_chunk turns each triple into a result dict.
     found = [_to_chunk(d, m, dist) for d, m, dist in zip(res["documents"][0], res["metadatas"][0], res["distances"][0])]
+    found = _keyword_rerank(query, found)[:k]
 
     # pull in superseding documents (e.g. a circular that replaces clause 11.2) even if they ranked lower
     # seen = (doc, section) pairs already in the results (to avoid duplicates). found_docs = doc ids already found.

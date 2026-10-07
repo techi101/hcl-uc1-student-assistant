@@ -79,7 +79,8 @@ log = logging.getLogger(__name__)
 MIN_SCORE = 0.50          # below this no chunk counts as evidence (measured: unanswerable max 0.53, answerable min 0.55)
 # MAX_SOURCES: at most 4 "in force" chunks go into the compose prompt, each cut to 900 characters (see compose).
 # WHY: a 7B model on a CPU laptop took 56-106 seconds with 5 sources of 1200 characters. A shorter prompt = a faster answer.
-MAX_SOURCES = 4           # fewer, shorter sources: 7B on a CPU laptop took 56-106 s with 5 x 1200 chars
+OCR_SOURCE_CHARS = 2000   # a scanned page is a whole TABLE (fee rows + TOTAL); cutting it at 900 chars lost the TOTAL row
+MAX_SOURCES = 4          # fewer, shorter sources: 7B on a CPU laptop took 56-106 s with 5 x 1200 chars
 # PRONOUN finds words that mean "the asker is talking about themself".
 # \b = word edge, so "my" matches in "What is my attendance?" but not inside "myth".
 # re.I = ignore upper/lower case, so "Am I" matches "am i".
@@ -376,7 +377,7 @@ def compose(s: State) -> State:
     blocks = [f'<untrusted_source id="S{i}" doc="{c["doc_id"]}" title="{c.get("title", "")[:80]}" section="{c.get("section")}" '
               f'page="{c.get("page")}" authority_level="{c.get("authority_level")}" effective_from="{c.get("effective_from")}" '
               f'status="{c.get("_status", "in force")}">\n'
-              f'{c["text"][:900]}\n</untrusted_source>' for i, c in enumerate(srcs, 1)]
+              f'{c["text"][:OCR_SOURCE_CHARS if c.get("ocr") else 900]}\n</untrusted_source>' for i, c in enumerate(srcs, 1)]
     # The user message: question + date + sources + the Annex A decision notes + tool results as JSON (the authoritative numbers).
     user = (f"QUESTION: {s['question']}\nAS OF DATE: {s['as_of_date']}\n\nSOURCES (precedence order):\n" + "\n".join(blocks)
             + f"\n\nPRECEDENCE NOTES: {pol['decision']}\n\nTOOL RESULTS (computed by code, authoritative):\n"

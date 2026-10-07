@@ -163,6 +163,16 @@ def _differ(na: dict, nb: dict) -> bool:
 # IN: two chunks  ->  OUT: True if one of them (a level 1-2 document) officially replaces the other's document.
 # WHY: if the circular already replaced Regulations 11.2 in step 2, we do not ALSO call other
 # Regulation clauses a "conflict" with the circular.
+# IN: two chunks  ->  OUT: True if both name a specific batch and the batches differ ("Admitted 2025-26" vs "Admitted 2026-27").
+def _different_cohorts(a: dict, b: dict) -> bool:
+    ya = [m.group(1) for m in _YEAR.finditer(a.get("scope_batches") or "")]
+    yb = [m.group(1) for m in _YEAR.finditer(b.get("scope_batches") or "")]
+    # "ALL" or no year -> applies to everyone -> can conflict; "2019-20 onwards" overlaps later batches -> can conflict;
+    # otherwise compare the first (admission) year
+    open_ended = any(w in f"{a.get('scope_batches')} {b.get('scope_batches')}".lower() for w in ("onward", "+", "after"))
+    return bool(ya and yb) and not open_ended and ya[0] != yb[0]
+
+
 def _related_by_supersession(a: dict, b: dict) -> bool:
     """A document that explicitly supersedes (part of) another speaks only to that part; its relation to the
     other document is settled by step 2, so other clauses of that document are not 'conflicts'."""
@@ -239,6 +249,10 @@ def resolve(chunks: list[dict], as_of_date: str, student: dict | None, query: st
             # Skip: already settled in step 2 (one officially replaces the other).
             if _related_by_supersession(a, b):
                 continue
+            # Different admission batches = different students, so different numbers are NOT a conflict
+            # (fee notice for 2025-26 admissions vs the one for 2026-27 admissions: both are correct, for their batch).
+            if _different_cohorts(a, b):
+                continue
             # A real conflict needs: different numbers (%, money) AND both talk about the question's topic
             # (a shared topic word, e.g. "attendance"). Otherwise, skip this pair.
             shared = {w for w in topic if w in a["text"].lower() and w in b["text"].lower()} if topic else set()
@@ -268,9 +282,9 @@ def resolve(chunks: list[dict], as_of_date: str, student: dict | None, query: st
                 conflicts.append(f"UNRESOLVED: {_label(a)} and {_label(b)} have the same authority (level {la}) and "
                                  f"effective date but state different values — contact the issuing office (step 5)")
 
-    # Order the winners: highest authority first, then newest start date, then best search score.
-    applicable.sort(key=lambda c: (int(c.get("authority_level", 3)), _neg(c.get("effective_from", "")),
-                                   -float(c.get("score", 0))))
+    # Order of the winners: keep the search order (most relevant first). Conflicts are already settled above, so the
+    # sources left do not compete; sorting newest-document-first pushed the 2025-26 fee page out of the 4 sources the
+    # LLM sees whenever a 2026-27 page was also found.
     # One readable sentence explaining all decisions (shown to the user and saved in the audit log).
     decision = "; ".join(notes + conflicts) or "no conflicts among applicable sources"
     # Return every bucket, so the answer can say "80% applies; 75% was superseded; FAQ 65% was overridden".
